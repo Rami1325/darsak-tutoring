@@ -1,0 +1,209 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Darsak — درسك
+   Teal carries trust and growth without the generic ed-tech blue, and reads
+   comfortably in Arabic-language contexts. Saffron is the single warm accent,
+   reserved for calls to action. Neutrals are warm-tinted rather than cold slate.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-sans);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-rating: var(--rating);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --radius: 0.75rem;
+
+    --background: oklch(0.994 0.003 106);
+    --foreground: oklch(0.21 0.014 190);
+
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.21 0.014 190);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.21 0.014 190);
+
+    --primary: oklch(0.48 0.09 178);
+    --primary-foreground: oklch(0.99 0.008 180);
+
+    --secondary: oklch(0.955 0.019 178);
+    --secondary-foreground: oklch(0.36 0.062 178);
+
+    --muted: oklch(0.965 0.006 150);
+    --muted-foreground: oklch(0.5 0.017 190);
+
+    --accent: oklch(0.77 0.135 72);
+    --accent-foreground: oklch(0.26 0.042 60);
+
+    --destructive: oklch(0.577 0.208 25.5);
+    --success: oklch(0.58 0.128 155);
+    --success-foreground: oklch(0.99 0.008 150);
+    --warning: oklch(0.79 0.14 78);
+    --warning-foreground: oklch(0.26 0.042 60);
+
+    /* Ratings run 1–10 (Israeli convention, matches the incumbent). */
+    --rating: oklch(0.72 0.15 68);
+
+    --border: oklch(0.912 0.008 175);
+    --input: oklch(0.912 0.008 175);
+    --ring: oklch(0.48 0.09 178);
+
+    --chart-1: oklch(0.48 0.09 178);
+    --chart-2: oklch(0.62 0.1 172);
+    --chart-3: oklch(0.72 0.11 120);
+    --chart-4: oklch(0.77 0.135 72);
+    --chart-5: oklch(0.62 0.14 42);
+
+    --sidebar: oklch(0.978 0.006 170);
+    --sidebar-foreground: oklch(0.21 0.014 190);
+    --sidebar-primary: oklch(0.48 0.09 178);
+    --sidebar-primary-foreground: oklch(0.99 0.008 180);
+    --sidebar-accent: oklch(0.955 0.019 178);
+    --sidebar-accent-foreground: oklch(0.36 0.062 178);
+    --sidebar-border: oklch(0.912 0.008 175);
+    --sidebar-ring: oklch(0.48 0.09 178);
+}
+
+.dark {
+    --background: oklch(0.185 0.016 195);
+    --foreground: oklch(0.96 0.006 150);
+
+    --card: oklch(0.228 0.018 195);
+    --card-foreground: oklch(0.96 0.006 150);
+    --popover: oklch(0.228 0.018 195);
+    --popover-foreground: oklch(0.96 0.006 150);
+
+    --primary: oklch(0.72 0.11 176);
+    --primary-foreground: oklch(0.17 0.022 190);
+
+    --secondary: oklch(0.28 0.028 190);
+    --secondary-foreground: oklch(0.93 0.015 175);
+
+    --muted: oklch(0.28 0.02 195);
+    --muted-foreground: oklch(0.7 0.016 180);
+
+    --accent: oklch(0.79 0.13 74);
+    --accent-foreground: oklch(0.2 0.032 60);
+
+    --destructive: oklch(0.68 0.19 24);
+    --success: oklch(0.7 0.13 156);
+    --success-foreground: oklch(0.17 0.022 150);
+    --warning: oklch(0.81 0.135 80);
+    --warning-foreground: oklch(0.2 0.032 60);
+
+    --rating: oklch(0.79 0.14 70);
+
+    --border: oklch(1 0 0 / 12%);
+    --input: oklch(1 0 0 / 16%);
+    --ring: oklch(0.72 0.11 176);
+
+    --chart-1: oklch(0.72 0.11 176);
+    --chart-2: oklch(0.64 0.1 168);
+    --chart-3: oklch(0.74 0.11 122);
+    --chart-4: oklch(0.79 0.13 74);
+    --chart-5: oklch(0.68 0.14 44);
+
+    --sidebar: oklch(0.212 0.018 195);
+    --sidebar-foreground: oklch(0.96 0.006 150);
+    --sidebar-primary: oklch(0.72 0.11 176);
+    --sidebar-primary-foreground: oklch(0.17 0.022 190);
+    --sidebar-accent: oklch(0.28 0.028 190);
+    --sidebar-accent-foreground: oklch(0.93 0.015 175);
+    --sidebar-border: oklch(1 0 0 / 12%);
+    --sidebar-ring: oklch(0.72 0.11 176);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    html {
+        @apply font-sans;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Arabic and Hebrew glyphs sit taller than Latin; loosen the default
+       leading so mixed-script paragraphs don't feel cramped. */
+    [dir="rtl"] body {
+        line-height: 1.75;
+    }
+
+    /* Arabic renders small at a given px size relative to Latin. */
+    [lang^="ar"] {
+        font-size: 1.03em;
+    }
+}
+
+@layer utilities {
+    /*
+     * Prices, phone numbers, and Latin course codes embedded in Arabic or
+     * Hebrew text get reordered by the bidi algorithm unless isolated.
+     * Apply to any run of neutral/Latin characters inside RTL copy.
+     */
+    .bidi-isolate {
+        unicode-bidi: isolate;
+    }
+
+    .numeric {
+        unicode-bidi: isolate;
+        direction: ltr;
+        font-variant-numeric: tabular-nums;
+    }
+}

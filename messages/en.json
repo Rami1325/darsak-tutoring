@@ -1,0 +1,218 @@
+{
+  "brand": {
+    "name": "Darsak",
+    "tagline": "Your private tutor, in Arabic"
+  },
+  "nav": {
+    "findTutor": "Find a tutor",
+    "subjects": "Subjects",
+    "onlineLessons": "Online lessons",
+    "exams": "Exams",
+    "guides": "Guides",
+    "becomeTutor": "Become a tutor",
+    "login": "Log in",
+    "language": "Language",
+    "menu": "Menu"
+  },
+  "home": {
+    "heroTitle": "Your private tutor, in Arabic",
+    "heroSubtitle": "Private lessons online or in person — bagrut, psychometric, YAEL and every subject. Tutors from here, who speak your language and know your curriculum.",
+    "searchSubjectLabel": "What do you want to learn?",
+    "searchSubjectPlaceholder": "Maths, English, psychometric…",
+    "searchLocalityLabel": "Where?",
+    "searchLocalityPlaceholder": "Nazareth, Umm al-Fahm, Rahat…",
+    "searchCta": "Find a tutor",
+    "searchOnlineHint": "Or learn online from anywhere in the country",
+    "trustFree": "Free for students",
+    "trustVerified": "Verified tutors",
+    "trustNoCommission": "No commission on your lessons",
+    "valuePropsTitle": "Why Darsak?",
+    "valueProps": {
+      "arabic": {
+        "title": "All in Arabic",
+        "body": "The site, the teaching and the support — all in your language. Hebrew and English too, if you prefer."
+      },
+      "curriculum": {
+        "title": "Our curriculum",
+        "body": "Bagrut by units, psychometric in Arabic, and YAEL — not a translation of somebody else's syllabus."
+      },
+      "noCommission": {
+        "title": "No commission on your lessons",
+        "body": "Lessons you arrange yourself stay entirely yours. We don't take a shekel."
+      }
+    },
+    "popularSubjectsTitle": "Popular subjects",
+    "popularExamsTitle": "Exam preparation",
+    "popularCitiesTitle": "Tutors by town",
+    "tutorCtaTitle": "A tutor? Join free",
+    "tutorCtaBody": "Build your profile, get students from your area, and pay zero commission on lessons you arrange yourself.",
+    "tutorCtaButton": "Become a tutor"
+  },
+  "modes": {
+    "online": "Online",
+    "inPerson": "In person",
+    "both": "Online & in person"
+  },
+  "levels": {
+    "elementary": "Elementary",
+    "middle": "Middle school",
+    "high": "High school",
+    "academic": "Academic",
+    "enrichment": "Enrichment",
+    "professional": "Professional"
+  },
+  "common": {
+    "perHour": "per hour",
+    "reviews": "reviews",
+    "lessons": "lessons",
+    "rating": "Rating",
+    "verified": "Verified",
+    "foundingTutor": "Founding tutor",
+    "skipToContent": "Skip to content",
+    "loading": "Loading…",
+    "search": "Search",
+    "close": "Close",
+    "yearsExperience": "{years} years' experience",
+    "respondsIn": "Replies within {minutes} min",
+    "home": "Home"
+  },
+  "demo": {
+    "banner": "The tutors shown here are demo data for preview only — not real people. Sign-up hasn't opened yet."
+  },
+  "filters": {
+    "title": "Filter results",
+    "any": "Any",
+    "mode": "Lesson type",
+    "language": "Teaching language",
+    "languageAr": "Arabic",
+    "languageHe": "Hebrew",
+    "languageEn": "English",
+    "gender": "Tutor gender",
+    "genderFemale": "Female",
+    "genderMale": "Male",
+    "level": "Level",
+    "maxPrice": "Max price",
+    "sort": "Sort",
+    "sortRelevance": "Most relevant",
+    "sortRating": "Highest rated",
+    "sortPriceAsc": "Lowest price",
+    "sortPriceDesc": "Highest price",
+    "sortLessons": "Most experienced",
+    "apply": "Apply"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "tutors": {
+    "title": "Private tutors",
+    "resultsTitle": "Search results",
+    "clearFilters": "Clear filters",
+    "emptyTitle": "No tutors match these filters",
+    "emptyBody": "Try widening the search — remove a filter or two, or look for online lessons instead of in person.",
+    "emptyCta": "See all tutors",
+    "count": "{count, plural, =0 {No tutors} one {# tutor} other {# tutors}}",
+    "seeAll": "See all tutors and refine"
+  },
+  "landing": {
+    "subjectTitle": "{subject} tutors",
+    "subjectInLocality": "{subject} tutors in {locality}",
+    "subjectOnline": "Online {subject} lessons",
+    "localityTitle": "Private tutors in {locality}",
+    "examTitle": "{exam} preparation",
+    "subjectIntro": "Find a {subject} tutor who fits — online or in person, in Arabic. Every tutor here speaks your language and knows the syllabus you're studying.",
+    "subjectInLocalityIntro": "{subject} tutors in {locality} and nearby. Lessons at your home, at the tutor's, or online.",
+    "subjectOnlineIntro": "Online {subject} lessons over Zoom — from anywhere in the country, no travel. Especially useful in towns with no local tutor for this subject.",
+    "localityIntro": "Every private tutor teaching in {locality} — across all subjects and levels.",
+    "examIntro": "Tutors specialising in {exam} preparation. Focused coaching in Arabic, with materials and past papers.",
+    "priceRange": "₪{min}–{max} per hour",
+    "onlineAvailable": "{count} teach online",
+    "relatedSubjects": "Related subjects",
+    "otherLocalities": "Other towns",
+    "browseAll": "See all tutors",
+    "alsoOnline": "You can also learn {subject} online"
+  },
+  "faq": {
+    "title": "Common questions",
+    "priceQ": "How much does an hour of private {topic} tuition cost?",
+    "priceA": "Prices start at ₪{min} an hour and go up to ₪{max}, depending on the tutor's experience and the level. Tutors set their own rates, and you can filter by the budget that suits you.",
+    "onlineQ": "Can I take {topic} lessons online?",
+    "onlineA": "Yes. {online} of {total} tutors teach online over Zoom or Google Meet, so you can learn from anywhere in the country without travelling.",
+    "chooseQ": "How do I choose the right tutor?",
+    "chooseA": "Read reviews from previous students, check the tutor's qualifications and how many lessons they've given, and make sure they explain in the language you're comfortable with — Arabic, Hebrew or English. For in-person lessons, check whether they travel to you or you go to them.",
+    "commissionQ": "Is there a commission or fee on lessons?",
+    "commissionA": "Searching and contacting tutors is completely free for students. And for tutors — we take no commission on lessons they arrange themselves with a student. That's the core difference between us and the other platforms operating here.",
+    "localityQ": "Are there tutors who come to your home in {locality}?",
+    "localityA": "Yes, {inPerson} tutors teach in person in {locality} and neighbouring towns. You arrange with the tutor whether the lesson is at your place, theirs, or somewhere public.",
+    "genderQ": "Can I ask for a female tutor?",
+    "genderA": "Yes. There's a dedicated tutor-gender filter on the search page, so you can see only female or only male tutors — whatever suits the family.",
+    "arabicQ": "Do the tutors explain in Arabic?",
+    "arabicA": "Every tutor here speaks Arabic. Many also explain in Hebrew or English, and some specialise in explaining Hebrew-taught university courses in Arabic."
+  },
+  "tutorProfile": {
+    "about": "About",
+    "subjects": "Subjects and rates",
+    "areas": "Teaching areas",
+    "languages": "Teaching languages",
+    "reviewsTitle": "Student reviews",
+    "noReviews": "No reviews yet for this tutor.",
+    "contact": "Contact this tutor",
+    "contactSoon": "Contact opens soon — the accounts system is still being built.",
+    "education": "Education",
+    "experience": "Experience",
+    "similarTutors": "Similar tutors",
+    "notFound": "Tutor not found"
+  },
+  "forTutors": {
+    "title": "Teach on Darsak — no commission on your lessons",
+    "subtitle": "An Arabic-language platform for private tutors in Israel. Build your profile, let students find you, and keep every shekel from lessons you arrange yourself.",
+    "point1Title": "Free to join",
+    "point1Body": "A full tutor profile, with every subject and area you teach, at no cost.",
+    "point2Title": "Zero commission on your lessons",
+    "point2Body": "Other platforms here take up to 20% of every lesson — even when the student paid you in cash. We don't. A lesson you arranged stays entirely yours.",
+    "point3Title": "Students from your area",
+    "point3Body": "We build a page for every subject and every town, so students find you on Google when they search for a tutor nearby.",
+    "point4Title": "All in Arabic",
+    "point4Body": "Your profile, your conversations with students, and support — all in your language.",
+    "ctaTitle": "We're looking for the first 300 tutors",
+    "ctaBody": "Early tutors get a permanent \"founding tutor\" badge on their profile.",
+    "ctaButton": "Register interest",
+    "ctaSoon": "Sign-up opens soon."
+  },
+  "guides": {
+    "title": "Guides and articles",
+    "subtitle": "Everything worth knowing about the exams and the syllabus — in Arabic.",
+    "readMore": "Read the guide",
+    "backToGuides": "Back to guides",
+    "relatedTutors": "Tutors in this area"
+  },
+  "about": {
+    "title": "About",
+    "body": "Darsak connects students with private tutors in Israel — in Arabic. We built it because every existing platform here is Hebrew-only, covers not a single Arab locality, and offers none of our subjects: no Arabic, no Hebrew as a second language, not even YAEL. All of that is missing for more than two million people."
+  },
+  "legal": {
+    "termsTitle": "Terms of use",
+    "privacyTitle": "Privacy policy",
+    "accessibilityTitle": "Accessibility statement",
+    "draftNotice": "This document is an early draft and will be updated before public launch."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The link may have changed, or the page was removed.",
+    "backHome": "Back to home"
+  },
+  "footer": {
+    "product": "Platform",
+    "forStudents": "For students",
+    "forTutors": "For tutors",
+    "legal": "Legal",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy",
+    "accessibility": "Accessibility statement",
+    "contact": "Contact",
+    "about": "About",
+    "guides": "Guides",
+    "rights": "All rights reserved"
+  }
+}
