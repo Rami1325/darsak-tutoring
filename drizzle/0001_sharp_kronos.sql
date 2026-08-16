@@ -1,0 +1,1 @@
+ALTER TABLE "tutors" ALTER COLUMN "rating_avg" SET DATA TYPE numeric(4, 2);

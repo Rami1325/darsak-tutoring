@@ -5,16 +5,17 @@ import type {
   TutorSearchResult,
   TutorSummary,
 } from "./types";
+import * as postgres from "@/lib/db/queries/tutors";
 
 /**
  * Tutor repository.
  *
- * Single seam between the directory and its data source. Today it reads the
- * fixture set; once `DATABASE_URL` is configured the same functions get a
- * Drizzle implementation and nothing upstream changes.
- *
- * `usingFixtures` is surfaced in the UI so demo tutors are never mistaken for
- * real ones.
+ * Single seam between the directory and its data source. With `DATABASE_URL`
+ * set every call goes to Postgres; without it the site runs on fixtures, so a
+ * fresh clone works with no configuration and `next build` doesn't need a
+ * database. Both implementations satisfy the same contract, including the
+ * locality rule (online tutors are reachable from every town) — the fixture
+ * path is the readable specification of what the SQL has to do.
  */
 export const usingFixtures = !process.env.DATABASE_URL;
 
@@ -24,6 +25,11 @@ function source(): TutorDetail[] {
   return fixtureTutors;
 }
 
+/**
+ * Pure — safe to call from either implementation's results, and used by the
+ * card to show the price for the subject the visitor actually searched for
+ * rather than the tutor's overall floor.
+ */
 export function priceForSubject(
   tutor: TutorSummary,
   subjectSlug?: string,
@@ -32,8 +38,11 @@ export function priceForSubject(
     ? tutor.subjects.filter((s) => s.subjectSlug === subjectSlug)
     : tutor.subjects;
   const pool = offers.length > 0 ? offers : tutor.subjects;
+  if (pool.length === 0) return 0;
   return Math.min(...pool.map((s) => s.pricePerHour));
 }
+
+/* ── Fixture implementation ──────────────────────────────────────────────── */
 
 function matches(tutor: TutorDetail, params: TutorSearchParams): boolean {
   const {
@@ -56,12 +65,6 @@ function matches(tutor: TutorDetail, params: TutorSearchParams): boolean {
   if (mode === "online" && !tutor.teachesOnline) return false;
   if (mode === "in_person" && !tutor.teachesInPerson) return false;
 
-  /*
-   * A locality filter only constrains in-person teaching. An online tutor is
-   * reachable from anywhere in the country, so excluding them from a city page
-   * would hide most of the supply — and city pages are the highest-volume
-   * long-tail surface.
-   */
   if (locality) {
     const servesLocality = tutor.localitySlugs.includes(locality);
     const reachableOnline = tutor.teachesOnline && mode !== "in_person";
@@ -95,10 +98,6 @@ function compare(
     case "lessons":
       return b.lessonsCount - a.lessonsCount;
     default: {
-      /*
-       * Relevance: verified first, then a rating weighted by review volume so a
-       * 10.0 from three students doesn't outrank a 9.6 from a hundred.
-       */
       const score = (t: TutorDetail) =>
         (t.verified ? 1 : 0) * 2 +
         t.ratingAvg * Math.min(1, Math.log10(t.ratingCount + 1) / 2);
@@ -107,8 +106,8 @@ function compare(
   }
 }
 
-export async function searchTutors(
-  params: TutorSearchParams = {},
+async function fixtureSearch(
+  params: TutorSearchParams,
 ): Promise<TutorSearchResult> {
   const perPage = params.perPage ?? DEFAULT_PER_PAGE;
   const page = Math.max(1, params.page ?? 1);
@@ -119,7 +118,6 @@ export async function searchTutors(
   const total = sorted.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const start = (page - 1) * perPage;
-
   const prices = matched.map((t) => priceForSubject(t, params.subject));
 
   return {
@@ -135,19 +133,32 @@ export async function searchTutors(
   };
 }
 
+/* ── Public API ──────────────────────────────────────────────────────────── */
+
+export async function searchTutors(
+  params: TutorSearchParams = {},
+): Promise<TutorSearchResult> {
+  return usingFixtures
+    ? fixtureSearch(params)
+    : postgres.searchTutors(params);
+}
+
 export async function countTutors(
   params: TutorSearchParams = {},
 ): Promise<number> {
+  if (!usingFixtures) return postgres.countTutors(params);
   return source().filter((tutor) => matches(tutor, params)).length;
 }
 
 export async function getTutorBySlug(
   slug: string,
 ): Promise<TutorDetail | null> {
+  if (!usingFixtures) return postgres.getTutorBySlug(slug);
   return source().find((tutor) => tutor.slug === slug) ?? null;
 }
 
 export async function getAllTutorSlugs(): Promise<string[]> {
+  if (!usingFixtures) return postgres.getAllTutorSlugs();
   return source().map((tutor) => tutor.slug);
 }
 
@@ -157,6 +168,8 @@ export async function getAllTutorSlugs(): Promise<string[]> {
  * domain's ranking down.
  */
 export async function getIndexableSubjectSlugs(): Promise<string[]> {
+  if (!usingFixtures) return postgres.getIndexableSubjectSlugs();
+
   const slugs = new Set<string>();
   for (const tutor of source()) {
     for (const offer of tutor.subjects) slugs.add(offer.subjectSlug);
@@ -172,6 +185,8 @@ export async function getIndexableSubjectSlugs(): Promise<string[]> {
  * page for them would render empty.
  */
 export async function getOnlineSubjectSlugs(): Promise<string[]> {
+  if (!usingFixtures) return postgres.getOnlineSubjectSlugs();
+
   const slugs = new Set<string>();
   for (const tutor of source()) {
     if (!tutor.teachesOnline) continue;
@@ -181,6 +196,8 @@ export async function getOnlineSubjectSlugs(): Promise<string[]> {
 }
 
 export async function getIndexableLocalitySlugs(): Promise<string[]> {
+  if (!usingFixtures) return postgres.getIndexableLocalitySlugs();
+
   const slugs = new Set<string>();
   for (const tutor of source()) {
     for (const slug of tutor.localitySlugs) slugs.add(slug);
@@ -192,8 +209,9 @@ export async function getIndexableLocalitySlugs(): Promise<string[]> {
 export async function getIndexablePairs(): Promise<
   { subject: string; locality: string; count: number }[]
 > {
-  const counts = new Map<string, number>();
+  if (!usingFixtures) return postgres.getIndexablePairs();
 
+  const counts = new Map<string, number>();
   for (const tutor of source()) {
     for (const offer of tutor.subjects) {
       for (const locality of tutor.localitySlugs) {

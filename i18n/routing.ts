@@ -73,6 +73,28 @@ export const pathnames = {
   /** Supply-side landing page — carries the "no commission" pitch. */
   "/for-tutors": { ar: "/للمعلمين", he: "/למורים", en: "/for-tutors" },
 
+  // ── Account surfaces ──────────────────────────────────────────────────────
+  "/login": { ar: "/دخول", he: "/כניסה", en: "/login" },
+  "/onboarding": {
+    ar: "/تسجيل-معلم",
+    he: "/הרשמת-מורה",
+    en: "/become-a-tutor",
+  },
+  "/dashboard": { ar: "/لوحتي", he: "/הלוח-שלי", en: "/dashboard" },
+  "/dashboard/profile": {
+    ar: "/لوحتي/صفحتي",
+    he: "/הלוח-שלי/הפרופיל",
+    en: "/dashboard/profile",
+  },
+  "/dashboard/verification": {
+    ar: "/لوحتي/التوثيق",
+    he: "/הלוח-שלי/אימות",
+    en: "/dashboard/verification",
+  },
+  /** Internal — stays Latin in every locale on purpose. */
+  "/admin": "/admin",
+  "/admin/verifications": "/admin/verifications",
+
   "/about": { ar: "/من-نحن", he: "/אודות", en: "/about" },
   "/terms": { ar: "/شروط-الاستخدام", he: "/תנאי-שימוש", en: "/terms" },
   "/privacy": {

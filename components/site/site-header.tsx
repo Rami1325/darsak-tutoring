@@ -11,8 +11,18 @@ import { Link } from "@/i18n/navigation";
 
 export function SiteHeader({
   alternates,
+  account,
 }: {
   alternates?: LocaleSwitcherProps["alternates"];
+  /**
+   * Account controls for signed-in users.
+   *
+   * Deliberately a slot rather than something this component resolves itself:
+   * reading the session means reading cookies, and that would opt every page
+   * carrying the header out of static generation — all ~1,300 of them. Only the
+   * dashboard and onboarding, which are dynamic anyway, pass this.
+   */
+  account?: React.ReactNode;
 }) {
   const t = useTranslations("nav");
   const common = useTranslations("common");
@@ -44,17 +54,22 @@ export function SiteHeader({
 
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher alternates={alternates} />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex lg:hidden"
-              render={<Link href="/tutors" />}
-            >
-              {t("findTutor")}
-            </Button>
-            <Button size="sm" render={<Link href="/for-tutors" />}>
-              {t("becomeTutor")}
-            </Button>
+
+            {account ?? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden sm:inline-flex"
+                  render={<Link href="/login" />}
+                >
+                  {t("login")}
+                </Button>
+                <Button size="sm" render={<Link href="/for-tutors" />}>
+                  {t("becomeTutor")}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>

@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 
 import { DirectionProvider } from "@/components/ui/direction";
 import {
@@ -63,6 +67,28 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * Namespaces that Client Components on public pages actually use — today, only
+ * the filter bar.
+ *
+ * With no `messages` prop, next-intl serialises the entire catalogue into every
+ * page: auth copy, the onboarding wizard, the dashboard, all of it, on all
+ * ~1,300 landing pages. Server Components read translations on the server and
+ * need none of it. Pages with their own client surfaces (login, onboarding)
+ * nest a provider carrying just their namespace.
+ */
+const PUBLIC_CLIENT_NAMESPACES = ["filters", "modes", "levels"] as const;
+
+async function publicClientMessages() {
+  const messages = await getMessages();
+  return Object.fromEntries(
+    PUBLIC_CLIENT_NAMESPACES.filter((key) => key in messages).map((key) => [
+      key,
+      messages[key],
+    ]),
+  );
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -84,7 +110,7 @@ export default async function LocaleLayout({
       suppressHydrationWarning
     >
       <body className="min-h-dvh bg-background text-foreground antialiased">
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={await publicClientMessages()}>
           <DirectionProvider direction={dir}>{children}</DirectionProvider>
         </NextIntlClientProvider>
       </body>

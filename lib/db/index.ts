@@ -25,7 +25,22 @@ export function getDb(): PostgresJsDatabase<typeof schema> {
     );
   }
 
-  const client = postgres(url, { prepare: false });
+  const client = postgres(url, {
+    // pgbouncer in transaction mode does not support prepared statements.
+    prepare: false,
+    /*
+     * One connection per process, deliberately.
+     *
+     * Each serverless function instance gets its own pool, and so does each of
+     * the ~20 workers `next build` forks. The driver's default of 10 puts 200
+     * connections against a Postgres that allows 100, and the build fails with
+     * opaque "Failed query" errors. Connection pooling belongs to the pooler,
+     * not to each instance.
+     */
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 15,
+  });
   cached = drizzle(client, { schema });
   return cached;
 }

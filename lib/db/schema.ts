@@ -119,7 +119,14 @@ export const profiles = pgTable(
     phone: varchar("phone", { length: 20 }).notNull(),
     phoneVerified: boolean("phone_verified").notNull().default(false),
     email: varchar("email", { length: 255 }),
+    /**
+     * A person's name isn't translated, but it is transliterated. Onboarding
+     * asks for the Arabic form and, optionally, a Latin one; Hebrew is optional
+     * and falls back. Resolution order lives in `toTutorName()`.
+     */
     fullName: varchar("full_name", { length: 120 }).notNull(),
+    fullNameHe: varchar("full_name_he", { length: 120 }),
+    fullNameLatin: varchar("full_name_latin", { length: 120 }),
     displayName: varchar("display_name", { length: 120 }),
     avatarUrl: text("avatar_url"),
     locale: varchar("locale", { length: 5 }).notNull().default("ar"),
@@ -211,8 +218,10 @@ export const tutors = pgTable(
     bioHe: text("bio_he"),
     bioEn: text("bio_en"),
     yearsExperience: smallint("years_experience"),
-    /** [{ institution, degree, field, year }] */
-    education: jsonb("education").notNull().default([]),
+    /** One line, e.g. "BSc Mathematics — University of Haifa". */
+    educationAr: varchar("education_ar", { length: 200 }),
+    educationHe: varchar("education_he", { length: 200 }),
+    educationEn: varchar("education_en", { length: 200 }),
     teachesOnline: boolean("teaches_online").notNull().default(true),
     teachesInPerson: boolean("teaches_in_person").notNull().default(false),
     travelRadiusKm: smallint("travel_radius_km"),
@@ -227,8 +236,12 @@ export const tutors = pgTable(
     verificationStatus: verificationStatus("verification_status")
       .notNull()
       .default("unverified"),
-    /** Denormalised counters, maintained by trigger. Rated 1–10. */
-    ratingAvg: numeric("rating_avg", { precision: 3, scale: 2 }),
+    /**
+     * Denormalised counters, maintained by trigger. Rated 1–10 — so precision
+     * has to be 4, not 3: numeric(3,2) tops out at 9.99 and rejects a tutor
+     * with a perfect 10.00 average.
+     */
+    ratingAvg: numeric("rating_avg", { precision: 4, scale: 2 }),
     ratingCount: integer("rating_count").notNull().default(0),
     lessonsCount: integer("lessons_count").notNull().default(0),
     responseTimeSec: integer("response_time_sec"),
@@ -255,6 +268,16 @@ export const tutors = pgTable(
 export const tutorSubjects = pgTable(
   "tutor_subjects",
   {
+    /*
+     * Surrogate key rather than (tutor, subject, level).
+     *
+     * `level` is legitimately null — an exam like the psychometric has no
+     * school level — and primary key columns cannot be null. The unique index
+     * below uses NULLS NOT DISTINCT so a tutor still can't list the same
+     * subject twice at "no level"; plain unique treats each null as different
+     * and would let duplicates through.
+     */
+    id: uuid("id").primaryKey().defaultRandom(),
     tutorId: uuid("tutor_id")
       .notNull()
       .references(() => tutors.profileId, { onDelete: "cascade" }),
@@ -266,8 +289,10 @@ export const tutorSubjects = pgTable(
     pricePerHour: integer("price_per_hour").notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.tutorId, table.subjectId, table.level] }),
+    index("tutor_subjects_tutor_idx").on(table.tutorId),
     index("tutor_subjects_subject_idx").on(table.subjectId, table.pricePerHour),
+    // The NULLS NOT DISTINCT unique constraint lives in
+    // supabase/sql/003_constraints.sql — drizzle-orm 0.45 can't express it.
   ],
 );
 

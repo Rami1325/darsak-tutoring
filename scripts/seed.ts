@@ -1,4 +1,7 @@
-﻿import "dotenv/config";
+﻿import { config } from "dotenv";
+
+// Next reads `.env.local` automatically; standalone scripts do not.
+config({ path: [".env.local", ".env"] });
 
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";

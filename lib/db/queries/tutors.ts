@@ -1,0 +1,522 @@
+import "server-only";
+
+import { and, asc, count, desc, eq, exists, inArray, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
+
+import type {
+  InstructionLanguage,
+  LocalizedText,
+  TutorDetail,
+  TutorName,
+  TutorReview,
+  TutorSearchParams,
+  TutorSearchResult,
+  TutorSummary,
+} from "@/lib/data/types";
+import { getDb } from "@/lib/db";
+import {
+  lessons,
+  localities,
+  profiles,
+  reviews,
+  subjects,
+  tutorLocalities,
+  tutorSubjects,
+  tutors,
+} from "@/lib/db/schema";
+
+/**
+ * Postgres implementation of the tutor repository.
+ *
+ * Filtering, ordering and pagination all happen in SQL — doing any of it in
+ * TypeScript would mean loading the whole table to show twelve cards. Assembly
+ * of the nested subject and locality lists happens in TypeScript, from two bulk
+ * queries keyed on the page of ids, which avoids both an N+1 and the row
+ * explosion a single wide join would produce.
+ */
+
+const PAGE_SIZE = 12;
+
+/** Only published, active profiles are ever visible to the public. */
+function publishedOnly(): SQL {
+  return and(eq(tutors.isActive, true), isNotNull(tutors.publishedAt))!;
+}
+
+function buildFilters(params: TutorSearchParams): SQL {
+  const db = getDb();
+  const conditions: (SQL | undefined)[] = [publishedOnly()];
+
+  if (params.subject) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(tutorSubjects)
+          .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
+          .where(
+            and(
+              eq(tutorSubjects.tutorId, tutors.profileId),
+              eq(subjects.slug, params.subject),
+              params.level ? eq(tutorSubjects.level, params.level) : undefined,
+              params.maxPrice
+                ? lte(tutorSubjects.pricePerHour, params.maxPrice)
+                : undefined,
+            ),
+          ),
+      ),
+    );
+  } else {
+    if (params.level) {
+      conditions.push(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(tutorSubjects)
+            .where(
+              and(
+                eq(tutorSubjects.tutorId, tutors.profileId),
+                eq(tutorSubjects.level, params.level),
+              ),
+            ),
+        ),
+      );
+    }
+    if (params.maxPrice) {
+      conditions.push(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(tutorSubjects)
+            .where(
+              and(
+                eq(tutorSubjects.tutorId, tutors.profileId),
+                lte(tutorSubjects.pricePerHour, params.maxPrice),
+              ),
+            ),
+        ),
+      );
+    }
+  }
+
+  if (params.mode === "online") {
+    conditions.push(eq(tutors.teachesOnline, true));
+  }
+  if (params.mode === "in_person") {
+    conditions.push(eq(tutors.teachesInPerson, true));
+  }
+
+  if (params.locality) {
+    const servesLocality = exists(
+      db
+        .select({ one: sql`1` })
+        .from(tutorLocalities)
+        .innerJoin(localities, eq(localities.id, tutorLocalities.localityId))
+        .where(
+          and(
+            eq(tutorLocalities.tutorId, tutors.profileId),
+            eq(localities.slug, params.locality),
+          ),
+        ),
+    );
+
+    /*
+     * A locality filter constrains in-person teaching only. An online tutor is
+     * reachable from anywhere in the country, and excluding them from a city
+     * page would hide most of the supply — city pages being the highest-volume
+     * long-tail surface. Mirrors the fixture implementation exactly.
+     */
+    conditions.push(
+      params.mode === "in_person"
+        ? servesLocality
+        : or(servesLocality, eq(tutors.teachesOnline, true)),
+    );
+  }
+
+  if (params.language) {
+    conditions.push(
+      sql`${params.language} = any(${tutors.languagesOfInstruction})`,
+    );
+  }
+  if (params.gender) {
+    conditions.push(eq(profiles.gender, params.gender));
+  }
+  if (params.minRating) {
+    conditions.push(sql`${tutors.ratingAvg} >= ${params.minRating}`);
+  }
+
+  return and(...conditions)!;
+}
+
+/** Lowest hourly rate, restricted to the searched subject when there is one. */
+function minPriceExpr(subjectSlug?: string) {
+  return subjectSlug
+    ? sql<number>`(
+        select min(ts.price_per_hour)
+        from tutor_subjects ts
+        join subjects s on s.id = ts.subject_id and s.slug = ${subjectSlug}
+        where ts.tutor_id = ${tutors.profileId}
+      )`
+    : sql<number>`(
+        select min(ts.price_per_hour)
+        from tutor_subjects ts
+        where ts.tutor_id = ${tutors.profileId}
+      )`;
+}
+
+function orderBy(params: TutorSearchParams) {
+  const price = minPriceExpr(params.subject);
+
+  switch (params.sort) {
+    case "price_asc":
+      return [asc(price)];
+    case "price_desc":
+      return [desc(price)];
+    case "rating":
+      return [desc(tutors.ratingAvg), desc(tutors.ratingCount)];
+    case "lessons":
+      return [desc(tutors.lessonsCount)];
+    default:
+      /*
+       * Relevance: verified first, then a rating weighted by review volume so a
+       * perfect 10 from three students doesn't outrank a 9.6 from a hundred.
+       * `log()` is base 10 in Postgres, matching `Math.log10` in the fixtures.
+       */
+      return [
+        desc(sql`
+          (case when ${tutors.verificationStatus} = 'verified' then 2 else 0 end)
+          + coalesce(${tutors.ratingAvg}, 0)
+            * least(1, log(${tutors.ratingCount} + 1) / 2)
+        `),
+      ];
+  }
+}
+
+function toLocalized(
+  ar: string | null,
+  he: string | null,
+  en: string | null,
+): LocalizedText {
+  return {
+    ...(ar ? { ar } : {}),
+    ...(he ? { he } : {}),
+    ...(en ? { en } : {}),
+  };
+}
+
+/** Names are transliterated, not translated — fall back rather than invent. */
+function toTutorName(row: {
+  fullName: string;
+  fullNameHe: string | null;
+  fullNameLatin: string | null;
+}): TutorName {
+  return {
+    ar: row.fullName,
+    he: row.fullNameHe ?? row.fullName,
+    en: row.fullNameLatin ?? row.fullName,
+  };
+}
+
+type TutorRow = {
+  slug: string;
+  profileId: string;
+  fullName: string;
+  fullNameHe: string | null;
+  fullNameLatin: string | null;
+  gender: "female" | "male" | "unspecified";
+  headlineAr: string | null;
+  headlineHe: string | null;
+  headlineEn: string | null;
+  bioAr: string | null;
+  bioHe: string | null;
+  bioEn: string | null;
+  educationAr: string | null;
+  educationHe: string | null;
+  educationEn: string | null;
+  yearsExperience: number | null;
+  teachesOnline: boolean;
+  teachesInPerson: boolean;
+  languages: InstructionLanguage[];
+  verificationStatus: string;
+  ratingAvg: string | null;
+  ratingCount: number;
+  lessonsCount: number;
+  responseTimeSec: number | null;
+  foundingTutor: boolean;
+};
+
+const tutorColumns = {
+  slug: tutors.slug,
+  profileId: tutors.profileId,
+  fullName: profiles.fullName,
+  fullNameHe: profiles.fullNameHe,
+  fullNameLatin: profiles.fullNameLatin,
+  gender: profiles.gender,
+  headlineAr: tutors.headlineAr,
+  headlineHe: tutors.headlineHe,
+  headlineEn: tutors.headlineEn,
+  bioAr: tutors.bioAr,
+  bioHe: tutors.bioHe,
+  bioEn: tutors.bioEn,
+  educationAr: tutors.educationAr,
+  educationHe: tutors.educationHe,
+  educationEn: tutors.educationEn,
+  yearsExperience: tutors.yearsExperience,
+  teachesOnline: tutors.teachesOnline,
+  teachesInPerson: tutors.teachesInPerson,
+  languages: tutors.languagesOfInstruction,
+  verificationStatus: tutors.verificationStatus,
+  ratingAvg: tutors.ratingAvg,
+  ratingCount: tutors.ratingCount,
+  lessonsCount: tutors.lessonsCount,
+  responseTimeSec: tutors.responseTimeSec,
+  foundingTutor: tutors.foundingTutor,
+};
+
+async function hydrate(rows: TutorRow[]): Promise<TutorSummary[]> {
+  if (rows.length === 0) return [];
+
+  const db = getDb();
+  const ids = rows.map((row) => row.profileId);
+
+  // Two bulk queries keyed on this page of ids — not one wide join, which would
+  // multiply every tutor row by subjects × localities.
+  const [offers, areas] = await Promise.all([
+    db
+      .select({
+        tutorId: tutorSubjects.tutorId,
+        subjectSlug: subjects.slug,
+        level: tutorSubjects.level,
+        pricePerHour: tutorSubjects.pricePerHour,
+      })
+      .from(tutorSubjects)
+      .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
+      .where(inArray(tutorSubjects.tutorId, ids)),
+    db
+      .select({
+        tutorId: tutorLocalities.tutorId,
+        localitySlug: localities.slug,
+      })
+      .from(tutorLocalities)
+      .innerJoin(localities, eq(localities.id, tutorLocalities.localityId))
+      .where(inArray(tutorLocalities.tutorId, ids)),
+  ]);
+
+  return rows.map((row) => ({
+    slug: row.slug,
+    name: toTutorName(row),
+    gender: row.gender === "unspecified" ? "male" : row.gender,
+    headline: toLocalized(row.headlineAr, row.headlineHe, row.headlineEn),
+    ratingAvg: row.ratingAvg ? Number(row.ratingAvg) : 0,
+    ratingCount: row.ratingCount,
+    lessonsCount: row.lessonsCount,
+    yearsExperience: row.yearsExperience ?? 0,
+    education: toLocalized(row.educationAr, row.educationHe, row.educationEn),
+    subjects: offers
+      .filter((offer) => offer.tutorId === row.profileId)
+      .map((offer) => ({
+        subjectSlug: offer.subjectSlug,
+        level: offer.level ?? undefined,
+        pricePerHour: offer.pricePerHour,
+      })),
+    localitySlugs: areas
+      .filter((area) => area.tutorId === row.profileId)
+      .map((area) => area.localitySlug),
+    teachesOnline: row.teachesOnline,
+    teachesInPerson: row.teachesInPerson,
+    languages: row.languages,
+    verified: row.verificationStatus === "verified",
+    foundingTutor: row.foundingTutor,
+    responseMinutes: row.responseTimeSec
+      ? Math.round(row.responseTimeSec / 60)
+      : undefined,
+  }));
+}
+
+export async function searchTutors(
+  params: TutorSearchParams = {},
+): Promise<TutorSearchResult> {
+  const db = getDb();
+  const perPage = params.perPage ?? PAGE_SIZE;
+  const page = Math.max(1, params.page ?? 1);
+  const where = buildFilters(params);
+  const price = minPriceExpr(params.subject);
+
+  const [rows, [totals]] = await Promise.all([
+    db
+      .select(tutorColumns)
+      .from(tutors)
+      .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+      .where(where)
+      .orderBy(...orderBy(params))
+      .limit(perPage)
+      .offset((page - 1) * perPage),
+    db
+      .select({
+        total: count(),
+        minPrice: sql<number | null>`min(${price})`,
+        maxPrice: sql<number | null>`max(${price})`,
+      })
+      .from(tutors)
+      .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+      .where(where),
+  ]);
+
+  const total = Number(totals?.total ?? 0);
+
+  return {
+    tutors: await hydrate(rows as TutorRow[]),
+    total,
+    page,
+    perPage,
+    totalPages: Math.max(1, Math.ceil(total / perPage)),
+    priceRange:
+      totals?.minPrice != null && totals?.maxPrice != null
+        ? { min: Number(totals.minPrice), max: Number(totals.maxPrice) }
+        : undefined,
+  };
+}
+
+export async function countTutors(
+  params: TutorSearchParams = {},
+): Promise<number> {
+  const [row] = await getDb()
+    .select({ total: count() })
+    .from(tutors)
+    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+    .where(buildFilters(params));
+
+  return Number(row?.total ?? 0);
+}
+
+export async function getTutorBySlug(
+  slug: string,
+): Promise<TutorDetail | null> {
+  const db = getDb();
+
+  const [row] = await db
+    .select(tutorColumns)
+    .from(tutors)
+    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+    .where(and(publishedOnly(), eq(tutors.slug, slug)))
+    .limit(1);
+
+  if (!row) return null;
+
+  const [summary] = await hydrate([row as TutorRow]);
+
+  const reviewRows = await db
+    .select({
+      id: reviews.id,
+      rating: reviews.rating,
+      title: reviews.title,
+      body: reviews.body,
+      createdAt: reviews.createdAt,
+      studentName: profiles.fullName,
+      subjectSlug: subjects.slug,
+    })
+    .from(reviews)
+    .innerJoin(profiles, eq(profiles.id, reviews.studentId))
+    // A review hangs off a lesson, and the lesson carries the subject.
+    .leftJoin(lessons, eq(lessons.id, reviews.lessonId))
+    .leftJoin(subjects, eq(subjects.id, lessons.subjectId))
+    .where(
+      and(
+        eq(reviews.tutorId, (row as TutorRow).profileId),
+        eq(reviews.status, "approved"),
+      ),
+    )
+    .orderBy(desc(reviews.createdAt))
+    .limit(20);
+
+  const detail: TutorDetail = {
+    ...summary,
+    bio: toLocalized(
+      (row as TutorRow).bioAr,
+      (row as TutorRow).bioHe,
+      (row as TutorRow).bioEn,
+    ),
+    reviews: reviewRows.map<TutorReview>((review) => ({
+      id: review.id,
+      studentName: review.studentName,
+      rating: review.rating,
+      body: { ar: review.body ?? undefined },
+      subjectSlug: review.subjectSlug ?? undefined,
+      createdAt: review.createdAt.toISOString().slice(0, 10),
+    })),
+  };
+
+  return detail;
+}
+
+export async function getAllTutorSlugs(): Promise<string[]> {
+  const rows = await getDb()
+    .select({ slug: tutors.slug })
+    .from(tutors)
+    .where(publishedOnly());
+
+  return rows.map((row) => row.slug);
+}
+
+/**
+ * The four functions below drive `generateStaticParams`, the sitemap and the
+ * thin-content guard. Each answers "what has real supply?" — never "what
+ * exists in the taxonomy?".
+ */
+export async function getIndexableSubjectSlugs(): Promise<string[]> {
+  const rows = await getDb()
+    .selectDistinct({ slug: subjects.slug })
+    .from(tutorSubjects)
+    .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
+    .innerJoin(tutors, eq(tutors.profileId, tutorSubjects.tutorId))
+    .where(publishedOnly());
+
+  return rows.map((row) => row.slug);
+}
+
+export async function getOnlineSubjectSlugs(): Promise<string[]> {
+  const rows = await getDb()
+    .selectDistinct({ slug: subjects.slug })
+    .from(tutorSubjects)
+    .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
+    .innerJoin(tutors, eq(tutors.profileId, tutorSubjects.tutorId))
+    .where(and(publishedOnly(), eq(tutors.teachesOnline, true)));
+
+  return rows.map((row) => row.slug);
+}
+
+export async function getIndexableLocalitySlugs(): Promise<string[]> {
+  const rows = await getDb()
+    .selectDistinct({ slug: localities.slug })
+    .from(tutorLocalities)
+    .innerJoin(localities, eq(localities.id, tutorLocalities.localityId))
+    .innerJoin(tutors, eq(tutors.profileId, tutorLocalities.tutorId))
+    .where(publishedOnly());
+
+  return rows.map((row) => row.slug);
+}
+
+export async function getIndexablePairs(): Promise<
+  { subject: string; locality: string; count: number }[]
+> {
+  const rows = await getDb()
+    .select({
+      subject: subjects.slug,
+      locality: localities.slug,
+      count: count(),
+    })
+    .from(tutorSubjects)
+    .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
+    .innerJoin(tutors, eq(tutors.profileId, tutorSubjects.tutorId))
+    .innerJoin(
+      tutorLocalities,
+      eq(tutorLocalities.tutorId, tutorSubjects.tutorId),
+    )
+    .innerJoin(localities, eq(localities.id, tutorLocalities.localityId))
+    .where(publishedOnly())
+    .groupBy(subjects.slug, localities.slug);
+
+  return rows.map((row) => ({
+    subject: row.subject,
+    locality: row.locality,
+    count: Number(row.count),
+  }));
+}

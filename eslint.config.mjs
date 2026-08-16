@@ -12,7 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated: Drizzle migrations and the Supabase CLI's scratch directory.
     "drizzle/**",
+    "supabase/.temp/**",
   ]),
   {
     files: ["**/*.{ts,tsx}"],
@@ -21,6 +23,19 @@ const eslintConfig = defineConfig([
     // and already carry `rtl:` variants for the parts that need flipping.
     ignores: ["components/ui/**"],
     rules: {
+      /**
+       * `useActionState` fixes the action signature as `(prevState, formData)`,
+       * so actions that ignore the previous state still have to declare it.
+       * Underscore marks that as deliberate.
+       */
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
       /**
        * Physical direction utilities are the single biggest source of RTL bugs.
        * Two of our three locales are right-to-left, and the default one is

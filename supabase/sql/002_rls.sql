@@ -29,6 +29,22 @@ alter table public.phone_reveals           enable row level security;
 alter table public.search_events           enable row level security;
 alter table public.reports                 enable row level security;
 
+-- Postgres has no `create policy if not exists`, so drop every policy in the
+-- schema before recreating them. That keeps this file re-runnable, which is
+-- what `npm run db:sql` promises.
+do $$
+declare policy_row record;
+begin
+  for policy_row in
+    select schemaname, tablename, policyname from pg_policies where schemaname = 'public'
+  loop
+    execute format(
+      'drop policy if exists %I on %I.%I',
+      policy_row.policyname, policy_row.schemaname, policy_row.tablename
+    );
+  end loop;
+end $$;
+
 -- ── Helper ──────────────────────────────────────────────────────────────────
 
 create or replace function public.is_admin()
