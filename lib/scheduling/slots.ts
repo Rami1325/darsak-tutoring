@@ -10,6 +10,8 @@ import {
   lessons,
   tutors,
 } from "@/lib/db";
+import { usingFixtures } from "@/lib/data/tutors";
+import { patternRanges } from "@/lib/scheduling/patterns";
 import {
   israelDayKey,
   israelInstant,
@@ -158,6 +160,40 @@ export async function getOpenSlots(
     byWeekday.set(row.weekday, ranges);
   }
 
+  return buildColumns({
+    byWeekday,
+    taken,
+    closedDays,
+    closedRanges,
+    lessonMinutes,
+    now,
+  });
+}
+
+/**
+ * The pure part: weekly ranges plus what is unavailable, out to a fortnight of
+ * concrete slots.
+ *
+ * Extracted so the Postgres path and the fixture path produce identical
+ * calendars from the same rules — the tutor repository's contract is that both
+ * implementations agree, and a second copy of this arithmetic is how they would
+ * quietly stop agreeing.
+ */
+function buildColumns({
+  byWeekday,
+  taken,
+  closedDays,
+  closedRanges,
+  lessonMinutes,
+  now,
+}: {
+  byWeekday: Map<number, { from: number; to: number }[]>;
+  taken: Set<number>;
+  closedDays: Set<string>;
+  closedRanges: { day: string; from: number; to: number }[];
+  lessonMinutes: number;
+  now: Date;
+}): DayColumn[] {
   const earliest = now.getTime() + MIN_LEAD_MINUTES * 60 * 1000;
   const today = israelParts(now);
   const columns: DayColumn[] = [];
@@ -226,6 +262,40 @@ export async function getOpenSlots(
 }
 
 /**
+ * The fixture twin.
+ *
+ * Without this the deployed, database-less site shows "this tutor hasn't set
+ * their hours" on every profile, and the whole booking feature is invisible in
+ * the one place anyone can look at it. The repository's design is that both
+ * implementations satisfy the same contract; scheduling has to honour that too.
+ *
+ * Demo calendars come from the same patterns the Postgres seed uses, so a
+ * fixture clone and a seeded database show a given tutor the same week.
+ */
+function fixtureSlots(
+  slug: string,
+  lessonMinutes: number,
+  now: Date,
+): DayColumn[] {
+  const byWeekday = new Map<number, { from: number; to: number }[]>();
+  for (const range of patternRanges(slug)) {
+    const ranges = byWeekday.get(range.weekday) ?? [];
+    ranges.push({ from: range.from, to: range.to });
+    byWeekday.set(range.weekday, ranges);
+  }
+
+  // Nothing is booked on fixtures — there is no database to book into.
+  return buildColumns({
+    byWeekday,
+    taken: new Set(),
+    closedDays: new Set(),
+    closedRanges: [],
+    lessonMinutes,
+    now,
+  });
+}
+
+/**
  * Slots by public slug.
  *
  * The inquiry page knows a tutor by their slug and nothing else — `TutorDetail`
@@ -237,6 +307,8 @@ export async function getOpenSlotsBySlug(
   slug: string,
   lessonMinutes = DEFAULT_LESSON_MINUTES,
 ): Promise<DayColumn[]> {
+  if (usingFixtures) return fixtureSlots(slug, lessonMinutes, new Date());
+
   const [tutor] = await getDb()
     .select({ profileId: tutors.profileId })
     .from(tutors)

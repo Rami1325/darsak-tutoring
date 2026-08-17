@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { getOwnTutor, getProfile } from "@/lib/auth/session";
-import { getTutorBySlug, usingFixtures } from "@/lib/data/tutors";
+import { getTutorBySlug } from "@/lib/data/tutors";
 import { pickText, tutorPriceRange } from "@/lib/data/types";
 import { inquiryHref, pathFor, tutorHref } from "@/lib/routes";
 import { shortDateLabel, shortWeekdayLabel } from "@/lib/scheduling/labels";
@@ -78,9 +78,7 @@ export default async function InquiryPage({ params, searchParams }: Props) {
   const [profile, ownTutor, openDays] = await Promise.all([
     getProfile(),
     getOwnTutor(),
-    // Fixtures have no availability table to read, and the form is unusable
-    // without an account anyway, so the picker simply comes back empty there.
-    usingFixtures ? Promise.resolve([]) : getOpenSlotsBySlug(slug),
+    getOpenSlotsBySlug(slug),
   ]);
 
   const name = tutor.name[typedLocale];
