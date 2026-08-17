@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import {
   BadgeCheck,
   CalendarClock,
+  CalendarRange,
   ChevronLeft,
   Clock,
   ExternalLink,
@@ -29,6 +30,7 @@ import {
   countUnreadMessages,
 } from "@/lib/messaging/queries";
 import { countOpenHours } from "@/lib/scheduling/availability";
+import { countScheduleAttention } from "@/lib/scheduling/lessons";
 import { tutorHref } from "@/lib/routes";
 import { unpublishProfile } from "@/lib/tutors/actions";
 import { cn } from "@/lib/utils";
@@ -56,7 +58,7 @@ export default async function DashboardPage({ params }: Props) {
     .where(eq(tutors.profileId, profile.id))
     .limit(1);
 
-  const [offers, areas, newInquiries, unread, openHours] = tutor
+  const [offers, areas, newInquiries, unread, openHours, schedule] = tutor
     ? await Promise.all([
         db
           .select({ id: tutorSubjects.id })
@@ -69,8 +71,9 @@ export default async function DashboardPage({ params }: Props) {
         countNewInquiries(profile.id),
         countUnreadMessages(profile.id),
         countOpenHours(profile.id),
+        countScheduleAttention(profile.id),
       ])
-    : [[], [], 0, 0, 0];
+    : [[], [], 0, 0, 0, { upcoming: 0, pending: 0 }];
 
   // Not a tutor yet — send them into the wizard rather than showing an empty
   // dashboard that explains nothing.
@@ -271,6 +274,43 @@ export default async function DashboardPage({ params }: Props) {
                 {unread}
               </span>
             )}
+            <ChevronLeft
+              className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
+              aria-hidden
+            />
+          </Link>
+
+          {/*
+            An unconfirmed lesson is the second thing worth interrupting a tutor
+            for. Until somebody says it happened it counts for nothing — not
+            towards their lessons total, not towards a review — so it is put in
+            front of them rather than left for whenever they open the calendar.
+          */}
+          <Link
+            href="/schedule"
+            className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-11 shrink-0 place-items-center rounded-xl",
+                schedule.pending > 0
+                  ? "bg-warning/20 text-warning-foreground"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              <CalendarRange className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{t("scheduleTitle")}</span>
+              <span className="block text-sm text-muted-foreground">
+                {schedule.pending > 0
+                  ? t("schedulePending", { count: schedule.pending })
+                  : schedule.upcoming > 0
+                    ? t("scheduleUpcoming", { count: schedule.upcoming })
+                    : t("scheduleEmpty")}
+              </span>
+            </span>
             <ChevronLeft
               className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
               aria-hidden

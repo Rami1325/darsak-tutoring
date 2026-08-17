@@ -14,7 +14,8 @@
     "dashboard": "لوحتي",
     "language": "اللغة",
     "menu": "القائمة",
-    "messages": "رسائلي"
+    "messages": "رسائلي",
+    "schedule": "جدولي"
   },
   "home": {
     "heroTitle": "معلّمك الخاص، بالعربي",
@@ -348,7 +349,11 @@
     "responseTime": "معدّل ردّك: {minutes} دقيقة",
     "availabilityTitle": "أوقاتي المتاحة",
     "availabilitySet": "{hours} ساعة مفتوحة بالأسبوع",
-    "availabilityEmpty": "لسّا ما حدّدت أوقاتك — الطلاب ما بيقدروا يحجزوا"
+    "availabilityEmpty": "لسّا ما حدّدت أوقاتك — الطلاب ما بيقدروا يحجزوا",
+    "scheduleTitle": "جدولي",
+    "schedulePending": "{count} درس بدّه تأكيد إنه صار",
+    "scheduleUpcoming": "{count} درس محجوز جايّ",
+    "scheduleEmpty": "ما في دروس محجوزة لهلق"
   },
   "availability": {
     "title": "أوقاتي المتاحة",
@@ -356,6 +361,36 @@
     "backToDashboard": "رجوع للوحة",
     "save": "احفظ أوقاتي",
     "saved": "انحفظ ✓"
+  },
+  "schedule": {
+    "title": "جدولي",
+    "subtitle": "دروسك المحجوزة وأوقاتك المفتوحة، أسبوع بأسبوع.",
+    "editAvailability": "عدّل أوقاتي",
+    "statUpcoming": "دروس جايّة",
+    "statPending": "بستنّى تأكيد",
+    "statCompleted": "دروس تمّت",
+    "statEarned": "هالشهر",
+    "pendingTitle": "دروس بدها تأكيد",
+    "pendingBody": "الدرس ما بينحسب ولا بينفتح عليه تقييم قبل ما حدا من الطرفين يأكّد إنه صار.",
+    "weekTitle": "الأسبوع",
+    "previousWeek": "الأسبوع اللي قبل",
+    "nextWeek": "الأسبوع الجاي",
+    "today": "هالأسبوع",
+    "noAvailability": "لسّا ما فتحت أوقات. افتح ساعاتك عشان الطلاب يقدروا يحجزوا.",
+    "agendaTitle": "تفاصيل الأسبوع",
+    "agendaEmpty": "ما في دروس بهالأسبوع.",
+    "confirm": "تمّ الدرس",
+    "didNotHappen": "ما صار",
+    "cancel": "إلغاء",
+    "undo": "تراجع",
+    "openThread": "المحادثة",
+    "state": {
+      "upcoming": "جاي",
+      "pending": "بدّه تأكيد",
+      "completed": "تمّ",
+      "cancelled": "ملغي",
+      "no_show": "ما صار"
+    }
   },
   "inquiry": {
     "title": "طلب درس",

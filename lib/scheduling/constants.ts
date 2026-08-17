@@ -33,3 +33,22 @@ export function gridHours(): number[] {
 export function hourLabel(hour: number) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
+
+/**
+ * Geometry for the two week grids — the student's slot picker and the tutor's
+ * calendar.
+ *
+ * Shared as a template string rather than as a component, because the two draw
+ * completely different cells: one renders selectable chips from client state,
+ * the other renders booked lessons on the server. What has to stay identical is
+ * the *shape* — the same hour gutter, the same column width, so the two read as
+ * one calendar rendered twice. A wrapper component serving both cell renderers
+ * across the server/client boundary would cost more than this line saves.
+ *
+ * `minmax` with a floor is what makes the grid scroll sideways at 360px instead
+ * of crushing seven columns into a phone: roughly three days stay visible,
+ * which is enough to show that there is more to the right.
+ */
+export function weekGridColumns(dayCount: number, minColumn = "5.5rem") {
+  return `2.5rem repeat(${dayCount}, minmax(${minColumn}, 1fr))`;
+}

@@ -138,6 +138,11 @@ create policy "tutors submit verifications" on public.verifications
 create policy "admins review verifications" on public.verifications
   for update using (public.is_admin()) with check (public.is_admin());
 
+-- Lessons live in `004_messaging.sql`, not here. That file runs later and
+-- drops every policy on a list of tables that includes `lessons`, so anything
+-- written for it in this file is created and then deleted a few seconds later
+-- — silently, since dropping a policy that will not exist is not an error.
+
 -- ── Reviews: approved reviews are public ────────────────────────────────────
 
 create policy "approved reviews are public" on public.reviews

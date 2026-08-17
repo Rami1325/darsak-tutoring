@@ -102,6 +102,12 @@ export const pathnames = {
     he: "/הודעות/[id]",
     en: "/messages/[id]",
   },
+  /**
+   * The week calendar. One surface for both sides, for the same reason the
+   * inbox is: a tutor's booked hours and a student's booked hours are the same
+   * rows read from opposite ends.
+   */
+  "/schedule": { ar: "/جدولي", he: "/היומן-שלי", en: "/schedule" },
   "/dashboard/profile": {
     ar: "/لوحتي/صفحتي",
     he: "/הלוח-שלי/הפרופיל",

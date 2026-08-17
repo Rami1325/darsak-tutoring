@@ -1,4 +1,9 @@
-import { LayoutDashboard, LogOut, MessageSquare } from "lucide-react";
+import {
+  CalendarRange,
+  LayoutDashboard,
+  LogOut,
+  MessageSquare,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +42,14 @@ export async function AccountMenu({
         </Button>
       )}
 
+      {/* Icon-only below `sm`: four labelled controls do not fit a 360px
+          header. `sr-only` rather than `hidden`, so the button keeps its name
+          for a screen reader at the width where it has lost its visible one. */}
+      <Button variant="ghost" size="sm" render={<Link href="/schedule" />}>
+        <CalendarRange className="size-4" aria-hidden />
+        <span className="sr-only sm:not-sr-only">{t("schedule")}</span>
+      </Button>
+
       <Button
         variant="ghost"
         size="sm"
@@ -44,7 +57,7 @@ export async function AccountMenu({
         render={<Link href="/messages" />}
       >
         <MessageSquare className="size-4" aria-hidden />
-        <span className="hidden sm:inline">{t("messages")}</span>
+        <span className="sr-only sm:not-sr-only">{t("messages")}</span>
         {unread > 0 && (
           <span className="numeric grid min-w-4 place-items-center rounded-full bg-primary px-1 py-px text-[0.625rem] font-semibold text-primary-foreground">
             {unread > 99 ? "99+" : unread}

@@ -14,7 +14,8 @@
     "dashboard": "Dashboard",
     "language": "Language",
     "menu": "Menu",
-    "messages": "Messages"
+    "messages": "Messages",
+    "schedule": "Schedule"
   },
   "home": {
     "heroTitle": "Your private tutor, in Arabic",
@@ -348,7 +349,11 @@
     "responseTime": "Your typical reply time: {minutes} minutes",
     "availabilityTitle": "My availability",
     "availabilitySet": "{hours} hours open each week",
-    "availabilityEmpty": "You haven't set your hours — students can't book"
+    "availabilityEmpty": "You haven't set your hours — students can't book",
+    "scheduleTitle": "My schedule",
+    "schedulePending": "{count} lessons waiting to be confirmed",
+    "scheduleUpcoming": "{count} lessons booked ahead",
+    "scheduleEmpty": "No lessons booked yet"
   },
   "availability": {
     "title": "My availability",
@@ -356,6 +361,36 @@
     "backToDashboard": "Back to dashboard",
     "save": "Save availability",
     "saved": "Saved ✓"
+  },
+  "schedule": {
+    "title": "My schedule",
+    "subtitle": "Your booked lessons and open hours, a week at a time.",
+    "editAvailability": "Edit availability",
+    "statUpcoming": "Upcoming",
+    "statPending": "Awaiting confirmation",
+    "statCompleted": "Completed",
+    "statEarned": "This month",
+    "pendingTitle": "Lessons awaiting confirmation",
+    "pendingBody": "A lesson doesn't count, and can't be reviewed, until one of you confirms it happened.",
+    "weekTitle": "Week",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "today": "This week",
+    "noAvailability": "You haven't opened any hours yet. Set your weekly availability so students can book.",
+    "agendaTitle": "This week in detail",
+    "agendaEmpty": "No lessons this week.",
+    "confirm": "It happened",
+    "didNotHappen": "Didn't happen",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "openThread": "Conversation",
+    "state": {
+      "upcoming": "Upcoming",
+      "pending": "Needs confirmation",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "Didn't happen"
+    }
   },
   "inquiry": {
     "title": "Request a lesson",

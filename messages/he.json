@@ -14,7 +14,8 @@
     "dashboard": "הלוח שלי",
     "language": "שפה",
     "menu": "תפריט",
-    "messages": "הודעות"
+    "messages": "הודעות",
+    "schedule": "היומן שלי"
   },
   "home": {
     "heroTitle": "המורה הפרטי שלך, בערבית",
@@ -348,7 +349,11 @@
     "responseTime": "זמן התגובה שלך: {minutes} דקות",
     "availabilityTitle": "הזמינות שלי",
     "availabilitySet": "{hours} שעות פתוחות בשבוע",
-    "availabilityEmpty": "עוד לא הגדרתם זמינות — תלמידים לא יכולים לקבוע"
+    "availabilityEmpty": "עוד לא הגדרתם זמינות — תלמידים לא יכולים לקבוע",
+    "scheduleTitle": "היומן שלי",
+    "schedulePending": "{count} שיעורים ממתינים לאישור שהתקיימו",
+    "scheduleUpcoming": "{count} שיעורים קרובים ביומן",
+    "scheduleEmpty": "אין עדיין שיעורים ביומן"
   },
   "availability": {
     "title": "הזמינות שלי",
@@ -356,6 +361,36 @@
     "backToDashboard": "חזרה ללוח",
     "save": "שמירת הזמינות",
     "saved": "נשמר ✓"
+  },
+  "schedule": {
+    "title": "היומן שלי",
+    "subtitle": "השיעורים שנקבעו והשעות הפנויות שלך, שבוע אחרי שבוע.",
+    "editAvailability": "עריכת זמינות",
+    "statUpcoming": "שיעורים קרובים",
+    "statPending": "ממתין לאישור",
+    "statCompleted": "שיעורים שהתקיימו",
+    "statEarned": "החודש",
+    "pendingTitle": "שיעורים שממתינים לאישור",
+    "pendingBody": "שיעור לא נספר ולא נפתח לביקורת עד שאחד הצדדים מאשר שהוא התקיים.",
+    "weekTitle": "השבוע",
+    "previousWeek": "השבוע הקודם",
+    "nextWeek": "השבוע הבא",
+    "today": "השבוע הנוכחי",
+    "noAvailability": "עדיין לא הגדרתם שעות פנויות. פתחו שעות כדי שתלמידים יוכלו לקבוע.",
+    "agendaTitle": "פירוט השבוע",
+    "agendaEmpty": "אין שיעורים בשבוע הזה.",
+    "confirm": "השיעור התקיים",
+    "didNotHappen": "לא התקיים",
+    "cancel": "ביטול",
+    "undo": "ביטול פעולה",
+    "openThread": "שיחה",
+    "state": {
+      "upcoming": "קרוב",
+      "pending": "ממתין לאישור",
+      "completed": "התקיים",
+      "cancelled": "בוטל",
+      "no_show": "לא התקיים"
+    }
   },
   "inquiry": {
     "title": "בקשת שיעור",

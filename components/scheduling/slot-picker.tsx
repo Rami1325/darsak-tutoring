@@ -3,6 +3,7 @@
 import { CalendarX2, Check, Plus } from "lucide-react";
 import { Fragment, useState } from "react";
 
+import { weekGridColumns } from "@/lib/scheduling/constants";
 import { cn } from "@/lib/utils";
 
 export type PickerDay = {
@@ -20,8 +21,8 @@ export type PickerDay = {
  * The grid is the layout on every screen size rather than a desktop treatment
  * with a separate mobile one: at 360px it simply scrolls sideways, which is how
  * every calendar on a phone behaves and what keeps one component honest instead
- * of two that drift apart. Columns are sized so roughly three days are visible
- * at the narrowest width, which is enough to see that scrolling is possible.
+ * of two that drift apart. The column geometry is `weekGridColumns()`, shared
+ * with the tutor's calendar so the two read as the same grid.
  *
  * Only hours that actually contain a slot get a row. The reference design shows
  * a tutor their whole day including the empty hours; a student picking a time
@@ -67,9 +68,7 @@ export function SlotPicker({
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div
           className="grid min-w-max gap-1"
-          style={{
-            gridTemplateColumns: `2.5rem repeat(${days.length}, minmax(5.5rem, 1fr))`,
-          }}
+          style={{ gridTemplateColumns: weekGridColumns(days.length) }}
         >
           <span aria-hidden />
           {days.map((day) => (

@@ -138,14 +138,29 @@ create policy "tutors read own reveals" on public.phone_reveals
   for select using (tutor_id = auth.uid() or public.is_admin());
 
 -- ── Lessons, students, subscriptions ────────────────────────────────────────
--- Not built yet (Phases 4 and 5). Policies land now so the tables are readable
--- by their owners the moment those surfaces exist, rather than failing closed
--- in a way that looks like a bug.
+-- Students and subscriptions are not built yet (Phase 5). Their policies land
+-- now so the tables are readable by their owners the moment those surfaces
+-- exist, rather than failing closed in a way that looks like a bug.
+--
+-- Lessons are defence in depth rather than the mechanism: the calendar reads
+-- them server-side through Drizzle, which connects as the owner, and the table
+-- is never granted to `anon` or `authenticated` — so unlike `messages`, which
+-- realtime forces into the browser's reach, it is unreachable from a client by
+-- construction. These policies are what keeps that true if a grant is ever
+-- added.
 
 create policy "lesson parties read" on public.lessons
   for select using (
     tutor_id = auth.uid() or student_id = auth.uid() or public.is_admin()
   );
+
+-- Either party may update, because either party may confirm a lesson happened.
+-- A tutor who alone could mark one complete would hold a mute button over their
+-- own reviews, since a review is gated on a completed lesson.
+create policy "lesson parties update" on public.lessons
+  for update
+  using (tutor_id = auth.uid() or student_id = auth.uid())
+  with check (tutor_id = auth.uid() or student_id = auth.uid());
 
 create policy "students read own" on public.students
   for select using (

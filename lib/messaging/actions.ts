@@ -2,6 +2,7 @@
 
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -27,11 +28,13 @@ import {
   localities,
   messages,
   subjects,
+  tutorSubjects,
   tutors,
 } from "@/lib/db";
 import { findConversation } from "@/lib/messaging/queries";
 import { threadHref } from "@/lib/routes";
 import { DEFAULT_LESSON_MINUTES, isSlotOpen } from "@/lib/scheduling/slots";
+import type { Level } from "@/lib/taxonomy/types";
 
 /**
  * The connection layer.
@@ -476,6 +479,7 @@ export async function setInquiryStatus(formData: FormData) {
       studentId: inquiries.studentId,
       subjectId: inquiries.subjectId,
       localityId: inquiries.localityId,
+      level: inquiries.level,
       mode: inquiries.mode,
       requestedAt: inquiries.requestedAt,
     })
@@ -515,6 +519,7 @@ async function bookLesson(inquiry: {
   studentId: string;
   subjectId: string | null;
   localityId: string | null;
+  level: Level | null;
   mode: "online" | "in_person";
   requestedAt: Date | null;
 }) {
@@ -544,8 +549,49 @@ async function bookLesson(inquiry: {
     mode: inquiry.mode,
     location: inquiry.mode === "online" ? "online" : null,
     localityId: inquiry.localityId,
+    price: await lessonPrice(inquiry),
     status: "scheduled",
   });
+}
+
+/**
+ * What this lesson costs, copied onto the row rather than looked up later.
+ *
+ * A tutor who raises their rate next month must not silently reprice a lesson
+ * both people already agreed — and the calendar's monthly total would rewrite
+ * its own history every time a rate changed. The price is a fact about the
+ * booking, so it is stored with the booking.
+ *
+ * Travel is deliberately not folded in: it is quoted per request, lives on the
+ * inquiry, and adding it here would make one number mean two things.
+ */
+async function lessonPrice(inquiry: {
+  tutorId: string;
+  subjectId: string | null;
+  level: Level | null;
+}): Promise<number | null> {
+  if (!inquiry.subjectId) return null;
+
+  const [offer] = await getDb()
+    .select({ pricePerHour: tutorSubjects.pricePerHour })
+    .from(tutorSubjects)
+    .where(
+      and(
+        eq(tutorSubjects.tutorId, inquiry.tutorId),
+        eq(tutorSubjects.subjectId, inquiry.subjectId),
+      ),
+    )
+    // A tutor can list one subject at several levels at different prices. Prefer
+    // the level that was asked for; fall back to their cheapest offering of it
+    // rather than to whichever row the planner happened to return first.
+    .orderBy(
+      desc(sql`${tutorSubjects.level} is not distinct from ${inquiry.level}`),
+      asc(tutorSubjects.pricePerHour),
+    )
+    .limit(1);
+
+  if (!offer) return null;
+  return Math.round((offer.pricePerHour * DEFAULT_LESSON_MINUTES) / 60);
 }
 
 /* ── Travel cost ─────────────────────────────────────────────────────────── */

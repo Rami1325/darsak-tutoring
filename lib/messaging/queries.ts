@@ -97,8 +97,14 @@ function toInquiry(row: InquiryRow): InquirySummary {
  * `profiles.phone` is deliberately not selected. Contact happens in the thread;
  * no one's number is shown to anyone else, and leaving the column out of the
  * projection is what makes that true regardless of what a component does later.
+ *
+ * Exported so the calendar reads counterparts through the same projection. A
+ * second query written elsewhere is a second place for the phone column to
+ * reappear, which is exactly the failure this shape exists to prevent.
  */
-async function loadCounterparts(ids: string[]): Promise<Map<string, Counterpart>> {
+export async function loadCounterparts(
+  ids: string[],
+): Promise<Map<string, Counterpart>> {
   if (ids.length === 0) return new Map();
 
   const rows = await getDb()
