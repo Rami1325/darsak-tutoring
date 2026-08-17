@@ -61,6 +61,19 @@ export function tutorHref(slug: string) {
   return { pathname: "/tutor/[slug]" as const, params: { slug } };
 }
 
+/** `source` records which surface produced the lead — profile, card, landing. */
+export function inquiryHref(slug: string, source?: string) {
+  return {
+    pathname: "/inquiry/[slug]" as const,
+    params: { slug },
+    ...(source ? { query: { from: source } } : {}),
+  };
+}
+
+export function threadHref(conversationId: string) {
+  return { pathname: "/messages/[id]" as const, params: { id: conversationId } };
+}
+
 export function guideHref(slug: string) {
   return { pathname: "/guides/[slug]" as const, params: { slug } };
 }

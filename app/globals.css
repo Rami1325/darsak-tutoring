@@ -207,3 +207,26 @@
         font-variant-numeric: tabular-nums;
     }
 }
+
+@layer components {
+    /*
+     * The inquiry form's locality field applies to in-person lessons only.
+     *
+     * Written as plain CSS rather than a Tailwind `group-has-[…]` variant: the
+     * nested brackets in that selector do not survive Tailwind v4's arbitrary-
+     * value parser, which emits `:has(:is())` and silently never matches.
+     *
+     * Doing it in CSS rather than in React state also means it is correct
+     * before hydration and after a draft is restored into the DOM. A hidden
+     * `<select>` still submits, so `submitInquiry` drops the locality whenever
+     * the chosen mode is online.
+     */
+    .inquiry-form .locality-field {
+        display: none;
+    }
+
+    .inquiry-form:has(input[name="mode"][value="in_person"]:checked)
+        .locality-field {
+        display: block;
+    }
+}

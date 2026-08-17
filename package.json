@@ -15,7 +15,8 @@
     "db:sql": "tsx scripts/apply-sql.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:tutors": "tsx scripts/seed-tutors.ts",
-    "check:search": "tsx scripts/check-search.ts"
+    "check:search": "tsx scripts/check-search.ts",
+    "check:i18n": "tsx scripts/check-messages.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -1,12 +1,14 @@
 "use server";
 
 import { eq } from "drizzle-orm";
+import { redirect as redirectToPath } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { redirect } from "@/i18n/navigation";
 import { getDb, profiles } from "@/lib/db";
 import { normalizeIsraeliPhone } from "@/lib/auth/phone";
+import { safeNext } from "@/lib/auth/redirect";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -25,6 +27,23 @@ export type AuthState = {
   phone?: string;
   error?: string;
 };
+
+/**
+ * Where to land once the session exists.
+ *
+ * `next` is already a resolved, locale-prefixed path — the caller built it from
+ * the page they were on — so it goes through `next/navigation`'s redirect
+ * rather than next-intl's, which would prefix the locale a second time.
+ */
+function finish(
+  next: string | undefined,
+  fallback: "/dashboard" | "/onboarding" | "/",
+  locale: string,
+) {
+  const target = safeNext(next);
+  if (target) redirectToPath(target);
+  redirect({ href: fallback, locale });
+}
 
 const phoneSchema = z.object({
   phone: z.string().min(1),
@@ -113,10 +132,11 @@ export async function verifyOtp(
   }
 
   const locale = await getLocale();
-  redirect({
-    href: existing.roles.includes("tutor") ? "/dashboard" : "/",
+  finish(
+    String(formData.get("next") ?? ""),
+    existing.roles.includes("tutor") ? "/dashboard" : "/",
     locale,
-  });
+  );
 
   return { step: "profile" };
 }
@@ -160,10 +180,16 @@ export async function completeProfile(
     })
     .onConflictDoNothing();
 
-  redirect({
-    href: parsed.data.role === "tutor" ? "/onboarding" : "/",
+  /*
+   * A brand-new tutor goes to the wizard regardless of where they came from —
+   * they have no profile to contact anyone with yet. A student resumes whatever
+   * they were doing, which is usually the inquiry they had already filled in.
+   */
+  finish(
+    parsed.data.role === "tutor" ? undefined : String(formData.get("next") ?? ""),
+    parsed.data.role === "tutor" ? "/onboarding" : "/",
     locale,
-  });
+  );
 
   return { step: "profile" };
 }

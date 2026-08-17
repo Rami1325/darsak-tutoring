@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const initialState: AuthState = { step: "phone" };
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const t = useTranslations("auth");
   const [state, formAction, pending] = useActionState(
     authenticate,
@@ -23,6 +23,8 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-5">
       <input type="hidden" name="step" value={state.step} />
+      {/* Where to land afterwards — validated server-side by `safeNext()`. */}
+      {next && <input type="hidden" name="next" value={next} />}
 
       {/*
         Only carry the phone forward once we're past the phone step.

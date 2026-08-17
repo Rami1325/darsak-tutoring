@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import { redirect as nextRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { LoginForm } from "@/components/auth/login-form";
@@ -9,11 +10,15 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import { Link, redirect } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
+import { safeNext } from "@/lib/auth/redirect";
 import { getProfile } from "@/lib/auth/session";
 import { alternatePaths, alternatesMetadata } from "@/lib/seo/alternates";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
-type Props = { params: Promise<{ locale: string }> };
+type Props = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 const href = () => "/login" as const;
 
@@ -29,15 +34,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function LoginPage({ params }: Props) {
+export default async function LoginPage({ params, searchParams }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
   const t = await getTranslations("auth");
 
+  const raw = (await searchParams).next;
+  const next = safeNext(Array.isArray(raw) ? raw[0] : raw);
+
   // Already signed in — nothing to do here.
   const profile = await getProfile();
   if (profile) {
+    if (next) nextRedirect(next);
     redirect({
       href: profile.roles.includes("tutor") ? "/dashboard" : "/",
       locale,
@@ -64,7 +73,7 @@ export default async function LoginPage({ params }: Props) {
         <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-xs sm:p-6">
           {isSupabaseConfigured ? (
             <ScopedMessages namespaces={["auth"]}>
-              <LoginForm />
+              <LoginForm next={next} />
             </ScopedMessages>
           ) : (
             <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-foreground">

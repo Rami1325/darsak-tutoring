@@ -5,7 +5,12 @@ import { cache } from "react";
 import { getLocale } from "next-intl/server";
 
 import { redirect } from "@/i18n/navigation";
-import { getDb, profiles, type profiles as ProfilesTable } from "@/lib/db";
+import {
+  getDb,
+  profiles,
+  tutors,
+  type profiles as ProfilesTable,
+} from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -45,6 +50,26 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
     .select()
     .from(profiles)
     .where(eq(profiles.id, user.id))
+    .limit(1);
+
+  return row ?? null;
+});
+
+/**
+ * The viewer's own tutor row, if they have one.
+ *
+ * Lets a page tell "this is my profile" from "this is someone else's" without
+ * every caller writing the same join — the inquiry form uses it to avoid
+ * offering a tutor the chance to send themselves a lead.
+ */
+export const getOwnTutor = cache(async () => {
+  const user = await getAuthUser();
+  if (!user) return null;
+
+  const [row] = await getDb()
+    .select({ slug: tutors.slug, isActive: tutors.isActive })
+    .from(tutors)
+    .where(eq(tutors.profileId, user.id))
     .limit(1);
 
   return row ?? null;

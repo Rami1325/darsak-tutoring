@@ -13,7 +13,8 @@
     "login": "Log in",
     "dashboard": "Dashboard",
     "language": "Language",
-    "menu": "Menu"
+    "menu": "Menu",
+    "messages": "Messages"
   },
   "home": {
     "heroTitle": "Your private tutor, in Arabic",
@@ -159,11 +160,11 @@
     "reviewsTitle": "Student reviews",
     "noReviews": "No reviews yet for this tutor.",
     "contact": "Contact this tutor",
-    "contactSoon": "Contact opens soon — the accounts system is still being built.",
     "education": "Education",
     "experience": "Experience",
     "similarTutors": "Similar tutors",
-    "notFound": "Tutor not found"
+    "notFound": "Tutor not found",
+    "contactHint": "Sending a request is free — it reaches the tutor directly, and you can see their phone number once you sign in."
   },
   "forTutors": {
     "title": "Teach on Darsak — no commission on your lessons",
@@ -340,7 +341,114 @@
     "finishAndPublish": "Finish and publish",
     "noProfileTitle": "You haven't built a tutor profile yet",
     "noProfileBody": "Build one in five short steps and start getting students from your area.",
-    "startOnboarding": "Get started"
+    "startOnboarding": "Get started",
+    "leadsTitle": "Requests and messages",
+    "leadsNew": "{count} new requests waiting for your reply",
+    "leadsNone": "No new requests right now",
+    "responseTime": "Your typical reply time: {minutes} minutes"
+  },
+  "inquiry": {
+    "title": "Request a lesson",
+    "heading": "Send a request to {name}",
+    "subtitle": "The clearer your details, the faster and better the reply.",
+    "backToProfile": "Back to profile",
+    "ownProfile": "This is your own profile — you can't send yourself a request.",
+    "subjectLabel": "Subject",
+    "choose": "Choose…",
+    "levelLabel": "Level",
+    "levelHint": "Optional — helps the tutor gauge the student's level.",
+    "levelAny": "Not specified",
+    "modeLabel": "Lesson type",
+    "modeOnline": "Online",
+    "modeInPerson": "In person",
+    "localityLabel": "Locality",
+    "messageLabel": "Your message",
+    "messageHint": "Say exactly what's needed: the grade, the coming exam, where the difficulty is.",
+    "messagePlaceholder": "Hello, I'm looking for maths tutoring for my son in 10th grade, geometry especially…",
+    "budgetLabel": "Budget per hour",
+    "budgetHint": "Optional, in shekels.",
+    "timesLabel": "Times that suit you",
+    "timesPlaceholder": "For example: after 4pm on weekdays",
+    "send": "Send request",
+    "signInToSend": "Sign in and send",
+    "signInHint": "We keep what you wrote — you'll come back to it after verifying.",
+    "errors": {
+      "message": "Write a message of at least 10 characters.",
+      "invalid": "Some details are missing or invalid.",
+      "tutorGone": "This tutor's profile isn't available right now.",
+      "self": "You can't send yourself a request.",
+      "blocked": "We can't deliver this request.",
+      "tooMany": "You've sent a lot of requests today. Try again tomorrow."
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "subtitle": "Every request and conversation in one place.",
+    "threadTitle": "Conversation",
+    "backToInbox": "Back to messages",
+    "emptyTitle": "No messages yet",
+    "emptyBody": "Once you send a tutor a request, the conversation appears here.",
+    "noMessagesYet": "New request",
+    "inquiryTitle": "Lesson request",
+    "status": {
+      "new": "New",
+      "viewed": "Opened",
+      "replied": "Replied",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "expired": "Expired"
+    },
+    "fieldSubject": "Subject",
+    "fieldMode": "Lesson type",
+    "fieldLocality": "Locality",
+    "fieldBudget": "Budget",
+    "fieldTimes": "Times that suit",
+    "accept": "Accept request",
+    "decline": "Decline",
+    "composerPlaceholder": "Write a message…",
+    "send": "Send",
+    "read": "Read",
+    "sent": "Sent",
+    "youBlocked": "You blocked this person. Unblock them to send again.",
+    "cannotSend": "You can't send messages in this conversation.",
+    "errors": {
+      "empty": "Write a message first.",
+      "notFound": "We couldn't find this conversation.",
+      "blocked": "We can't deliver this message.",
+      "tooMany": "You've sent a lot of messages in a short time. Wait a moment."
+    }
+  },
+  "contact": {
+    "showPhone": "Show phone number",
+    "openWhatsApp": "WhatsApp",
+    "call": "Call",
+    "share": "Share",
+    "shareText": "{name} on Darsak: {url}",
+    "waGreeting": "Hello {name}, I found you on Darsak and wanted to ask about private lessons.",
+    "signInToSeePhone": "Sign in to see the number.",
+    "signIn": "Sign in",
+    "errors": {
+      "tutorGone": "This tutor's profile isn't available right now.",
+      "blocked": "We can't show this number.",
+      "tooMany": "You've asked for a lot of numbers this hour. Try again shortly.",
+      "reportReason": "Write a reason for the report — at least 10 characters.",
+      "reportTarget": "We couldn't find what you're reporting."
+    }
+  },
+  "safety": {
+    "title": "Before the first meeting",
+    "compact": "For the first meeting: somewhere public or with a parent present, and agree the price beforehand.",
+    "meetPublic": "Hold the first meeting somewhere public, or at home with an adult present.",
+    "guardian": "For a student under 16, a parent or guardian must know about it and agree.",
+    "payDirect": "Payment goes directly between student and tutor — Darsak is not a party to the lesson and takes no commission.",
+    "report": "Report",
+    "reportTitle": "Report a problem",
+    "reportBody": "Tell us what happened. It reaches our team for review, and the other person is never told who reported them.",
+    "reportPlaceholder": "A short description of what happened…",
+    "reportSubmit": "Send report",
+    "reportThanks": "We've received your report. Thank you — we'll review it shortly.",
+    "block": "Block",
+    "unblock": "Unblock"
   },
   "notFound": {
     "title": "Page not found",

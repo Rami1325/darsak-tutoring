@@ -5,6 +5,7 @@ import {
   Languages,
   MapPin,
   Monitor,
+  Send,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -12,6 +13,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import { ContactActions } from "@/components/contact/contact-actions";
+import { ReportDialog } from "@/components/contact/report-dialog";
+import { ScopedMessages } from "@/components/i18n/scoped-messages";
 import { Price } from "@/components/marketplace/price";
 import { Rating } from "@/components/marketplace/rating";
 import { TutorCard } from "@/components/marketplace/tutor-card";
@@ -29,6 +33,8 @@ import {
 } from "@/lib/data/tutors";
 import { pickText } from "@/lib/data/types";
 import {
+  absoluteUrl,
+  inquiryHref,
   localityHref,
   pathFor,
   subjectHref,
@@ -176,14 +182,32 @@ export default async function TutorPage({ params }: Props) {
             </div>
           </div>
 
-          <div className="mt-6 border-t border-border/70 pt-5">
-            {/* Contact needs accounts and messaging — Phase 3. */}
-            <Button size="2xl" className="w-full sm:w-auto" disabled>
+          {/*
+            Contact, on a page that stays statically generated.
+            The inquiry form is its own route because it reads the session;
+            phone reveal and sharing are Client Components that resolve the
+            viewer at click time. Nothing here reads a cookie during render.
+          */}
+          <div className="mt-6 space-y-3 border-t border-border/70 pt-5">
+            <Button
+              size="2xl"
+              className="w-full sm:w-auto"
+              render={<Link href={inquiryHref(slug, "profile")} />}
+            >
+              <Send className="size-5" aria-hidden />
               {t("contact")}
             </Button>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("contactSoon")}
-            </p>
+
+            <ScopedMessages namespaces={["contact"]}>
+              <ContactActions
+                tutorSlug={slug}
+                tutorName={name}
+                profileUrl={absoluteUrl(basePath)}
+                next={basePath}
+              />
+            </ScopedMessages>
+
+            <p className="text-xs text-muted-foreground">{t("contactHint")}</p>
           </div>
         </header>
 
@@ -320,6 +344,12 @@ export default async function TutorPage({ params }: Props) {
             </div>
           </Section>
         )}
+
+        <div className="mt-10 flex justify-center border-t border-border/70 pt-4">
+          <ScopedMessages namespaces={["safety"]}>
+            <ReportDialog targetType="tutor" targetRef={slug} />
+          </ScopedMessages>
+        </div>
       </main>
       <SiteFooter />
       <JsonLd

@@ -1,9 +1,12 @@
 import { eq } from "drizzle-orm";
 import {
   BadgeCheck,
+  ChevronLeft,
+  Clock,
   ExternalLink,
   Eye,
   EyeOff,
+  Inbox,
   Languages,
   MapPin,
   Pencil,
@@ -20,6 +23,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { requireProfile } from "@/lib/auth/session";
 import { getDb, tutorLocalities, tutorSubjects, tutors } from "@/lib/db";
+import {
+  countNewInquiries,
+  countUnreadMessages,
+} from "@/lib/messaging/queries";
 import { tutorHref } from "@/lib/routes";
 import { unpublishProfile } from "@/lib/tutors/actions";
 import { cn } from "@/lib/utils";
@@ -47,7 +54,7 @@ export default async function DashboardPage({ params }: Props) {
     .where(eq(tutors.profileId, profile.id))
     .limit(1);
 
-  const [offers, areas] = tutor
+  const [offers, areas, newInquiries, unread] = tutor
     ? await Promise.all([
         db
           .select({ id: tutorSubjects.id })
@@ -57,8 +64,10 @@ export default async function DashboardPage({ params }: Props) {
           .select({ tutorId: tutorLocalities.tutorId })
           .from(tutorLocalities)
           .where(eq(tutorLocalities.tutorId, profile.id)),
+        countNewInquiries(profile.id),
+        countUnreadMessages(profile.id),
       ])
-    : [[], []];
+    : [[], [], 0, 0];
 
   // Not a tutor yet — send them into the wizard rather than showing an empty
   // dashboard that explains nothing.
@@ -222,6 +231,57 @@ export default async function DashboardPage({ params }: Props) {
               </span>
             }
           />
+        </section>
+
+        {/*
+          Leads sit above the founding badge and the publish controls: a tutor
+          who has an unanswered inquiry should see that before anything else,
+          and "inquiries answered within 24h" is the marketplace metric that
+          decides whether this side of the market works at all.
+        */}
+        <section className="mt-6">
+          <Link
+            href="/messages"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-11 shrink-0 place-items-center rounded-xl",
+                newInquiries > 0
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              <Inbox className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{t("leadsTitle")}</span>
+              <span className="block text-sm text-muted-foreground">
+                {newInquiries > 0
+                  ? t("leadsNew", { count: newInquiries })
+                  : t("leadsNone")}
+              </span>
+            </span>
+            {unread > 0 && (
+              <span className="numeric grid min-w-6 place-items-center rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                {unread}
+              </span>
+            )}
+            <ChevronLeft
+              className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
+              aria-hidden
+            />
+          </Link>
+
+          {tutor.responseTimeSec != null && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="size-3.5" aria-hidden />
+              {t("responseTime", {
+                minutes: Math.max(1, Math.round(tutor.responseTimeSec / 60)),
+              })}
+            </p>
+          )}
         </section>
 
         {tutor.foundingTutor && (

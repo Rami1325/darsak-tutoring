@@ -424,6 +424,17 @@ export const inquiries = pgTable(
     index("inquiries_tutor_idx").on(table.tutorId, table.status),
     index("inquiries_student_idx").on(table.studentId),
     index("inquiries_created_idx").on(table.createdAt),
+    /*
+     * A thread is a merged timeline of every inquiry and message between one
+     * pair, so the pair — not the conversation id — is what the thread query
+     * filters on. `conversations` is unique on the same pair, which is what
+     * makes that equivalence hold.
+     */
+    index("inquiries_pair_idx").on(
+      table.studentId,
+      table.tutorId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -586,7 +597,11 @@ export const phoneReveals = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("phone_reveals_tutor_idx").on(table.tutorId)],
+  (table) => [
+    index("phone_reveals_tutor_idx").on(table.tutorId),
+    /* Serves the per-viewer hourly cap that keeps this from being a scraper. */
+    index("phone_reveals_viewer_idx").on(table.viewerId, table.createdAt),
+  ],
 );
 
 export const searchEvents = pgTable(
@@ -619,5 +634,38 @@ export const reports = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("reports_status_idx").on(table.status)],
+  (table) => [
+    index("reports_status_idx").on(table.status),
+    index("reports_target_idx").on(table.targetType, table.targetId),
+  ],
+);
+
+/**
+ * A one-way cut of contact. Enforced symmetrically at write time — if either
+ * party has blocked the other, neither can open an inquiry or send a message.
+ *
+ * Deliberately not a soft "mute": in a market this tightly networked, a woman
+ * who wants a man to stop contacting her needs the platform to actually stop
+ * him, and the person doing the blocking is never told whether it took effect
+ * on the other side.
+ */
+export const blocks = pgTable(
+  "blocks",
+  {
+    blockerId: uuid("blocker_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    blockedId: uuid("blocked_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.blockerId, table.blockedId] }),
+    // The reverse direction: "has anyone blocked me?" is asked as often as
+    // "whom have I blocked?", and both run on every send.
+    index("blocks_blocked_idx").on(table.blockedId),
+  ],
 );

@@ -1,18 +1,27 @@
-import { LayoutDashboard, LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, MessageSquare } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { signOut } from "@/lib/auth/actions";
+import { getAuthUser } from "@/lib/auth/session";
+import { countUnreadMessages } from "@/lib/messaging/queries";
 
 /**
- * Rendered into `SiteHeader`'s `account` slot by the dashboard and onboarding
- * pages, which are dynamic already. Keeping it out of the header itself is what
+ * Rendered into `SiteHeader`'s `account` slot by the dynamic pages — dashboard,
+ * onboarding, messages, inquiry. Keeping it out of the header itself is what
  * lets the rest of the site stay statically generated.
  */
-export async function AccountMenu({ showDashboard = true }: { showDashboard?: boolean }) {
+export async function AccountMenu({
+  showDashboard = true,
+}: {
+  showDashboard?: boolean;
+}) {
   const t = await getTranslations("nav");
   const auth = await getTranslations("auth");
+
+  const user = await getAuthUser();
+  const unread = user ? await countUnreadMessages(user.id) : 0;
 
   return (
     <>
@@ -27,6 +36,22 @@ export async function AccountMenu({ showDashboard = true }: { showDashboard?: bo
           {t("dashboard")}
         </Button>
       )}
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="relative"
+        render={<Link href="/messages" />}
+      >
+        <MessageSquare className="size-4" aria-hidden />
+        <span className="hidden sm:inline">{t("messages")}</span>
+        {unread > 0 && (
+          <span className="numeric grid min-w-4 place-items-center rounded-full bg-primary px-1 py-px text-[0.625rem] font-semibold text-primary-foreground">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
+      </Button>
+
       <form action={signOut}>
         <Button type="submit" variant="outline" size="sm">
           <LogOut className="size-4" aria-hidden />

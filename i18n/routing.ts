@@ -63,6 +63,16 @@ export const pathnames = {
     en: "/tutor/[slug]",
   },
 
+  /**
+   * The inquiry form. Its own route rather than a section of the profile page,
+   * because it has to read the session and the profile page has to stay static.
+   */
+  "/inquiry/[slug]": {
+    ar: "/طلب-درس/[slug]",
+    he: "/בקשת-שיעור/[slug]",
+    en: "/request/[slug]",
+  },
+
   "/guides": { ar: "/أدلة", he: "/מדריכים", en: "/guides" },
   "/guides/[slug]": {
     ar: "/أدلة/[slug]",
@@ -81,6 +91,17 @@ export const pathnames = {
     en: "/become-a-tutor",
   },
   "/dashboard": { ar: "/لوحتي", he: "/הלוח-שלי", en: "/dashboard" },
+  /**
+   * One inbox for both sides. A tutor's "leads" and a student's "messages" are
+   * the same rows read from opposite ends, and splitting them into two surfaces
+   * would double the code to show one conversation.
+   */
+  "/messages": { ar: "/رسائلي", he: "/הודעות", en: "/messages" },
+  "/messages/[id]": {
+    ar: "/رسائلي/[id]",
+    he: "/הודעות/[id]",
+    en: "/messages/[id]",
+  },
   "/dashboard/profile": {
     ar: "/لوحتي/صفحتي",
     he: "/הלוח-שלי/הפרופיל",
