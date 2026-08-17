@@ -230,4 +230,63 @@
         .in-person-only {
         display: block;
     }
+
+    /*
+     * The two handles of the price range.
+     *
+     * Both inputs are stacked over the same track so either can be grabbed
+     * where they overlap: the input itself ignores pointer events and only the
+     * thumb takes them back. Written by hand rather than with utilities because
+     * `::-webkit-slider-thumb` and `::-moz-range-thumb` cannot be expressed as
+     * Tailwind variants, and both vendors need the rule spelled out separately.
+     */
+    .price-range-input {
+        position: absolute;
+        inset-inline: 0;
+        top: 1.25rem;
+        width: 100%;
+        height: 1.5rem;
+        margin: 0;
+        background: transparent;
+        pointer-events: none;
+        appearance: none;
+        outline: none;
+    }
+
+    .price-range-input::-webkit-slider-thumb {
+        pointer-events: auto;
+        appearance: none;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 9999px;
+        background: var(--primary);
+        border: 2px solid var(--background);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+        cursor: grab;
+    }
+
+    .price-range-input::-moz-range-thumb {
+        pointer-events: auto;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid var(--background);
+        border-radius: 9999px;
+        background: var(--primary);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+        cursor: grab;
+    }
+
+    .price-range-input::-moz-range-track {
+        background: transparent;
+    }
+
+    .price-range-input:focus-visible::-webkit-slider-thumb {
+        outline: 3px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    .price-range-input:focus-visible::-moz-range-thumb {
+        outline: 3px solid var(--ring);
+        outline-offset: 2px;
+    }
 }

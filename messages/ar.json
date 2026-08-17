@@ -93,14 +93,14 @@
     "genderFemale": "معلّمة",
     "genderMale": "معلّم",
     "level": "المرحلة",
-    "maxPrice": "أعلى سعر",
     "sort": "الترتيب",
     "sortRelevance": "الأنسب",
     "sortRating": "الأعلى تقييماً",
     "sortPriceAsc": "الأرخص أولاً",
     "sortPriceDesc": "الأغلى أولاً",
     "sortLessons": "الأكثر خبرة",
-    "apply": "طبّق"
+    "apply": "طبّق",
+    "price": "السعر للساعة"
   },
   "pagination": {
     "label": "تصفّح الصفحات",

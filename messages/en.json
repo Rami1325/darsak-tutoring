@@ -93,14 +93,14 @@
     "genderFemale": "Female",
     "genderMale": "Male",
     "level": "Level",
-    "maxPrice": "Max price",
     "sort": "Sort",
     "sortRelevance": "Most relevant",
     "sortRating": "Highest rated",
     "sortPriceAsc": "Lowest price",
     "sortPriceDesc": "Highest price",
     "sortLessons": "Most experienced",
-    "apply": "Apply"
+    "apply": "Apply",
+    "price": "Price per hour"
   },
   "pagination": {
     "label": "Pagination",

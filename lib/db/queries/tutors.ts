@@ -1,9 +1,10 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, exists, inArray, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, inArray, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
 
 import type {
   InstructionLanguage,
+  PriceHistogram,
   LocalizedText,
   TutorDetail,
   TutorName,
@@ -60,6 +61,9 @@ function buildFilters(params: TutorSearchParams): SQL {
               params.maxPrice
                 ? lte(tutorSubjects.pricePerHour, params.maxPrice)
                 : undefined,
+              params.minPrice
+                ? gte(tutorSubjects.pricePerHour, params.minPrice)
+                : undefined,
             ),
           ),
       ),
@@ -90,6 +94,21 @@ function buildFilters(params: TutorSearchParams): SQL {
               and(
                 eq(tutorSubjects.tutorId, tutors.profileId),
                 lte(tutorSubjects.pricePerHour, params.maxPrice),
+              ),
+            ),
+        ),
+      );
+    }
+    if (params.minPrice) {
+      conditions.push(
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(tutorSubjects)
+            .where(
+              and(
+                eq(tutorSubjects.tutorId, tutors.profileId),
+                gte(tutorSubjects.pricePerHour, params.minPrice),
               ),
             ),
         ),
@@ -427,6 +446,68 @@ export async function landingStats(params: TutorSearchParams = {}): Promise<{
     priceMin: row?.priceMin != null ? Number(row.priceMin) : undefined,
     priceMax: row?.priceMax != null ? Number(row.priceMax) : undefined,
   };
+}
+
+/**
+ * Price distribution, bucketed in Postgres.
+ *
+ * One query: the per-tutor minimum price for the searched subject, bucketed by
+ * `width_bucket` across the match set's own range. Pulling every price back to
+ * count them in TypeScript would be the same mistake the search page avoids —
+ * loading the table to render a widget.
+ *
+ * `width_bucket` returns `bucketCount + 1` for a value equal to the maximum, so
+ * that top bucket is folded back into the last real one.
+ */
+export async function priceHistogram(
+  params: TutorSearchParams = {},
+  bucketCount: number,
+): Promise<PriceHistogram | undefined> {
+  const db = getDb();
+  const price = minPriceExpr(params.subject);
+  const where = buildFilters(params);
+
+  const [bounds] = await db
+    .select({
+      min: sql<number | null>`min(${price})`,
+      max: sql<number | null>`max(${price})`,
+    })
+    .from(tutors)
+    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+    .where(where);
+
+  if (bounds?.min == null || bounds?.max == null) return undefined;
+
+  const min = Number(bounds.min);
+  const max = Number(bounds.max);
+  const buckets = new Array<number>(bucketCount).fill(0);
+
+  if (max === min) {
+    const [only] = await db
+      .select({ total: count() })
+      .from(tutors)
+      .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+      .where(where);
+    buckets[0] = Number(only?.total ?? 0);
+    return { min, max, buckets };
+  }
+
+  const rows = await db
+    .select({
+      bucket: sql<number>`least(width_bucket(${price}, ${min}, ${max}, ${bucketCount}), ${bucketCount})`,
+      total: count(),
+    })
+    .from(tutors)
+    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+    .where(where)
+    .groupBy(sql`1`);
+
+  for (const row of rows) {
+    const index = Number(row.bucket) - 1;
+    if (index >= 0 && index < bucketCount) buckets[index] = Number(row.total);
+  }
+
+  return { min, max, buckets };
 }
 
 export async function countTutors(

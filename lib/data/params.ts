@@ -63,9 +63,20 @@ export function parseSearchParams(raw: RawSearchParams): {
   const level = oneOf(first(raw.level), LEVELS);
   const sort = oneOf(first(raw.sort), SORTS);
 
-  const rawPrice = Number(first(raw.maxPrice));
-  const maxPrice =
-    Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : undefined;
+  const price = (key: "minPrice" | "maxPrice") => {
+    const value = Number(first(raw[key]));
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  };
+  /*
+   * Two handles on one track can be dragged past each other on a slow frame,
+   * and without JavaScript they are simply two independent inputs. Swap rather
+   * than reject: an inverted range is a legible intent, not an error.
+   */
+  let minPrice = price("minPrice");
+  let maxPrice = price("maxPrice");
+  if (minPrice && maxPrice && minPrice > maxPrice) {
+    [minPrice, maxPrice] = [maxPrice, minPrice];
+  }
 
   const rawPage = Number(first(raw.page));
   const page = Number.isFinite(rawPage) && rawPage > 1 ? Math.floor(rawPage) : 1;
@@ -75,6 +86,7 @@ export function parseSearchParams(raw: RawSearchParams): {
     language,
     gender,
     level,
+    minPrice,
     maxPrice,
     sort,
     page,
@@ -85,6 +97,7 @@ export function parseSearchParams(raw: RawSearchParams): {
     language,
     gender,
     level,
+    minPrice: minPrice ? String(minPrice) : undefined,
     maxPrice: maxPrice ? String(maxPrice) : undefined,
     sort,
   };

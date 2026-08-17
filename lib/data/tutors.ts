@@ -1,5 +1,6 @@
 import { fixtureTutors } from "./fixtures/tutors";
 import type {
+  PriceHistogram,
   TutorDetail,
   TutorSearchParams,
   TutorSearchResult,
@@ -21,6 +22,9 @@ import { cachedSupply } from "./supply-cache";
 export const usingFixtures = !process.env.DATABASE_URL;
 
 const DEFAULT_PER_PAGE = 12;
+
+/** Enough bars to show shape at 360px without becoming noise. */
+export const HISTOGRAM_BUCKETS = 24;
 
 function source(): TutorDetail[] {
   return fixtureTutors;
@@ -53,6 +57,7 @@ function matches(tutor: TutorDetail, params: TutorSearchParams): boolean {
     mode,
     language,
     gender,
+    minPrice,
     maxPrice,
     minRating,
   } = params;
@@ -76,6 +81,7 @@ function matches(tutor: TutorDetail, params: TutorSearchParams): boolean {
   if (gender && tutor.gender !== gender) return false;
   if (minRating && tutor.ratingAvg < minRating) return false;
   if (maxPrice && priceForSubject(tutor, subject) > maxPrice) return false;
+  if (minPrice && priceForSubject(tutor, subject) < minPrice) return false;
 
   return true;
 }
@@ -176,6 +182,57 @@ export async function landingStats(params: TutorSearchParams = {}): Promise<{
     priceMin: prices.length ? Math.min(...prices) : undefined,
     priceMax: prices.length ? Math.max(...prices) : undefined,
   };
+}
+
+/**
+ * Price distribution for the range slider.
+ *
+ * `minPrice`/`maxPrice` are stripped from the params on purpose: the histogram
+ * describes the whole match set so the bars stay put while the handles move
+ * across them.
+ */
+export async function priceHistogram(
+  params: TutorSearchParams = {},
+  buckets = HISTOGRAM_BUCKETS,
+): Promise<PriceHistogram | undefined> {
+  const base = { ...params, minPrice: undefined, maxPrice: undefined };
+  if (!usingFixtures) return postgres.priceHistogram(base, buckets);
+
+  const prices = source()
+    .filter((tutor) => matches(tutor, base))
+    .map((tutor) => priceForSubject(tutor, params.subject))
+    .filter((price) => price > 0);
+
+  return bucketPrices(prices, buckets);
+}
+
+/**
+ * Shared by both implementations so a fixture clone and a database draw the
+ * same shape. Equal-width buckets; the top price lands in the last one rather
+ * than falling off the end.
+ */
+export function bucketPrices(
+  prices: number[],
+  bucketCount: number,
+): PriceHistogram | undefined {
+  if (prices.length === 0) return undefined;
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const counts = new Array<number>(bucketCount).fill(0);
+
+  if (max === min) {
+    counts[0] = prices.length;
+    return { min, max, buckets: counts };
+  }
+
+  const width = (max - min) / bucketCount;
+  for (const price of prices) {
+    const index = Math.min(bucketCount - 1, Math.floor((price - min) / width));
+    counts[index] += 1;
+  }
+
+  return { min, max, buckets: counts };
 }
 
 export async function countTutors(
