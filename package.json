@@ -15,6 +15,7 @@
     "db:sql": "tsx scripts/apply-sql.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:tutors": "tsx scripts/seed-tutors.ts",
+    "db:seed:availability": "tsx scripts/seed-availability.ts",
     "check:search": "tsx scripts/check-search.ts",
     "check:i18n": "tsx scripts/check-messages.ts",
     "check:slots": "tsx scripts/check-scheduling.ts"
