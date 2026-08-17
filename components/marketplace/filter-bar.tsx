@@ -3,10 +3,6 @@
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import {
-  PriceRange,
-  type PriceHistogramData,
-} from "@/components/marketplace/price-range";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,21 +54,17 @@ export type FilterValues = {
   language?: string;
   gender?: string;
   level?: string;
-  minPrice?: string;
   maxPrice?: string;
   sort?: string;
 };
 
 export function FilterBar({
   values,
-  histogram,
   preserve,
   action,
   className,
 }: {
   values: FilterValues;
-  /** Price distribution of the match set, for the range slider. */
-  histogram?: PriceHistogramData;
   /** Query params carried through that aren't part of the filter form. */
   preserve?: Record<string, string>;
   /**
@@ -106,7 +98,7 @@ export function FilterBar({
         {t("title")}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Field
           name="mode"
           label={t("mode")}
@@ -151,12 +143,16 @@ export function FilterBar({
             { value: "enrichment", label: levels("enrichment") },
           ]}
         />
-        <PriceRange
-          histogram={histogram}
-          min={values.minPrice}
-          max={values.maxPrice}
-          label={t("price")}
-          anyLabel={any}
+        <Field
+          name="maxPrice"
+          label={t("maxPrice")}
+          value={values.maxPrice}
+          options={[
+            { value: "", label: any },
+            { value: "100", label: "≤ ₪100" },
+            { value: "150", label: "≤ ₪150" },
+            { value: "200", label: "≤ ₪200" },
+          ]}
         />
         <Field
           name="sort"

@@ -10,7 +10,7 @@ import { TutorCard } from "@/components/marketplace/tutor-card";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/routing";
-import { priceHistogram, searchTutors } from "@/lib/data/tutors";
+import { searchTutors } from "@/lib/data/tutors";
 import type { TutorSearchParams } from "@/lib/data/types";
 import { tutorListJsonLd } from "@/lib/seo/json-ld";
 import { pathFor, tutorHref, tutorsPath } from "@/lib/routes";
@@ -43,10 +43,10 @@ export async function TutorGrid({
   seeAllHref: string;
 }) {
   const t = await getTranslations("tutors");
-  const [result, histogram] = await Promise.all([
-    searchTutors({ ...searchParams, perPage: LANDING_LIMIT }),
-    priceHistogram(searchParams),
-  ]);
+  const result = await searchTutors({
+    ...searchParams,
+    perPage: LANDING_LIMIT,
+  });
 
   const preserve: Record<string, string> = {};
   if (searchParams.subject) preserve.subject = searchParams.subject;
@@ -57,7 +57,6 @@ export async function TutorGrid({
     <>
       <FilterBar
         values={{}}
-        histogram={histogram}
         preserve={preserve}
         action={tutorsPath(locale)}
         className="mt-6"
@@ -122,19 +121,11 @@ export async function TutorResults({
   highlightSubject?: string;
 }) {
   const t = await getTranslations("tutors");
-  const [result, histogram] = await Promise.all([
-    searchTutors(searchParams),
-    priceHistogram(searchParams),
-  ]);
+  const result = await searchTutors(searchParams);
 
   return (
     <>
-      <FilterBar
-        values={filterValues}
-        histogram={histogram}
-        preserve={preserve}
-        className="mt-6"
-      />
+      <FilterBar values={filterValues} preserve={preserve} className="mt-6" />
 
       <p className="mt-5 text-sm text-muted-foreground">
         {t("count", { count: result.total })}

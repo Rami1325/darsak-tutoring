@@ -77,26 +77,11 @@ export type TutorSearchParams = {
   mode?: LessonMode;
   language?: InstructionLanguage;
   gender?: TutorGender;
-  minPrice?: number;
   maxPrice?: number;
   minRating?: number;
   sort?: TutorSort;
   page?: number;
   perPage?: number;
-};
-
-/**
- * The price distribution behind the range slider.
- *
- * Bucketed over the match set *ignoring* the price filter itself — otherwise
- * the bars collapse into the handles as you drag them, and the shape you were
- * using to decide where to drag disappears exactly when you need it.
- */
-export type PriceHistogram = {
-  min: number;
-  max: number;
-  /** Counts per equal-width bucket, low to high. */
-  buckets: number[];
 };
 
 export type TutorSearchResult = {

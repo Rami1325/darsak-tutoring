@@ -93,14 +93,14 @@
     "genderFemale": "מורה",
     "genderMale": "מורה",
     "level": "שלב",
+    "maxPrice": "מחיר מרבי",
     "sort": "מיון",
     "sortRelevance": "הרלוונטי ביותר",
     "sortRating": "הדירוג הגבוה",
     "sortPriceAsc": "הזול ביותר",
     "sortPriceDesc": "היקר ביותר",
     "sortLessons": "הכי מנוסה",
-    "apply": "החל",
-    "price": "מחיר לשעה"
+    "apply": "החל"
   },
   "pagination": {
     "label": "ניווט בין עמודים",
