@@ -1,5 +1,5 @@
 import type { FaqItem } from "@/components/site/faq";
-import { countTutors, searchTutors } from "@/lib/data/tutors";
+import { landingStats as repositoryStats } from "@/lib/data/tutors";
 import type { TutorSearchParams } from "@/lib/data/types";
 
 /**
@@ -21,19 +21,7 @@ export type LandingStats = {
 export async function landingStats(
   params: TutorSearchParams,
 ): Promise<LandingStats> {
-  const [all, online, inPerson] = await Promise.all([
-    searchTutors({ ...params, perPage: 1 }),
-    countTutors({ ...params, mode: "online" }),
-    countTutors({ ...params, mode: "in_person" }),
-  ]);
-
-  return {
-    total: all.total,
-    online,
-    inPerson,
-    priceMin: all.priceRange?.min,
-    priceMax: all.priceRange?.max,
-  };
+  return repositoryStats(params);
 }
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;

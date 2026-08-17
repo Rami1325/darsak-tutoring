@@ -6,6 +6,7 @@ import type {
   TutorSummary,
 } from "./types";
 import * as postgres from "@/lib/db/queries/tutors";
+import { cachedSupply } from "./supply-cache";
 
 /**
  * Tutor repository.
@@ -143,6 +144,40 @@ export async function searchTutors(
     : postgres.searchTutors(params);
 }
 
+/**
+ * One round trip for a landing page's counts and price band.
+ *
+ * The fixture twin computes the same thing in TypeScript, and the mode split
+ * follows the same rule the SQL uses: within a locality's match set, the online
+ * tutors are the ones who teach online and the in-person ones are those who
+ * actually serve that town.
+ */
+export async function landingStats(params: TutorSearchParams = {}): Promise<{
+  total: number;
+  online: number;
+  inPerson: number;
+  priceMin?: number;
+  priceMax?: number;
+}> {
+  if (!usingFixtures) return postgres.landingStats(params);
+
+  const base = { ...params, mode: undefined };
+  const matched = source().filter((tutor) => matches(tutor, base));
+  const prices = matched.map((tutor) => priceForSubject(tutor, params.subject));
+
+  return {
+    total: matched.length,
+    online: matched.filter((tutor) => tutor.teachesOnline).length,
+    inPerson: matched.filter(
+      (tutor) =>
+        tutor.teachesInPerson &&
+        (!params.locality || tutor.localitySlugs.includes(params.locality)),
+    ).length,
+    priceMin: prices.length ? Math.min(...prices) : undefined,
+    priceMax: prices.length ? Math.max(...prices) : undefined,
+  };
+}
+
 export async function countTutors(
   params: TutorSearchParams = {},
 ): Promise<number> {
@@ -158,8 +193,10 @@ export async function getTutorBySlug(
 }
 
 export async function getAllTutorSlugs(): Promise<string[]> {
-  if (!usingFixtures) return postgres.getAllTutorSlugs();
-  return source().map((tutor) => tutor.slug);
+  return cachedSupply("tutorSlugs", async () => {
+    if (!usingFixtures) return postgres.getAllTutorSlugs();
+    return source().map((tutor) => tutor.slug);
+  });
 }
 
 /**
@@ -168,13 +205,15 @@ export async function getAllTutorSlugs(): Promise<string[]> {
  * domain's ranking down.
  */
 export async function getIndexableSubjectSlugs(): Promise<string[]> {
-  if (!usingFixtures) return postgres.getIndexableSubjectSlugs();
+  return cachedSupply("subjectSlugs", async () => {
+    if (!usingFixtures) return postgres.getIndexableSubjectSlugs();
 
-  const slugs = new Set<string>();
-  for (const tutor of source()) {
-    for (const offer of tutor.subjects) slugs.add(offer.subjectSlug);
-  }
-  return [...slugs];
+    const slugs = new Set<string>();
+    for (const tutor of source()) {
+      for (const offer of tutor.subjects) slugs.add(offer.subjectSlug);
+    }
+    return [...slugs];
+  });
 }
 
 /**
@@ -185,44 +224,50 @@ export async function getIndexableSubjectSlugs(): Promise<string[]> {
  * page for them would render empty.
  */
 export async function getOnlineSubjectSlugs(): Promise<string[]> {
-  if (!usingFixtures) return postgres.getOnlineSubjectSlugs();
+  return cachedSupply("onlineSubjectSlugs", async () => {
+    if (!usingFixtures) return postgres.getOnlineSubjectSlugs();
 
-  const slugs = new Set<string>();
-  for (const tutor of source()) {
-    if (!tutor.teachesOnline) continue;
-    for (const offer of tutor.subjects) slugs.add(offer.subjectSlug);
-  }
-  return [...slugs];
+    const slugs = new Set<string>();
+    for (const tutor of source()) {
+      if (!tutor.teachesOnline) continue;
+      for (const offer of tutor.subjects) slugs.add(offer.subjectSlug);
+    }
+    return [...slugs];
+  });
 }
 
 export async function getIndexableLocalitySlugs(): Promise<string[]> {
-  if (!usingFixtures) return postgres.getIndexableLocalitySlugs();
+  return cachedSupply("localitySlugs", async () => {
+    if (!usingFixtures) return postgres.getIndexableLocalitySlugs();
 
-  const slugs = new Set<string>();
-  for (const tutor of source()) {
-    for (const slug of tutor.localitySlugs) slugs.add(slug);
-  }
-  return [...slugs];
+    const slugs = new Set<string>();
+    for (const tutor of source()) {
+      for (const slug of tutor.localitySlugs) slugs.add(slug);
+    }
+    return [...slugs];
+  });
 }
 
 /** Subject × locality combinations that have real supply. Feeds the sitemap. */
 export async function getIndexablePairs(): Promise<
   { subject: string; locality: string; count: number }[]
 > {
-  if (!usingFixtures) return postgres.getIndexablePairs();
+  return cachedSupply("indexablePairs", async () => {
+    if (!usingFixtures) return postgres.getIndexablePairs();
 
-  const counts = new Map<string, number>();
-  for (const tutor of source()) {
-    for (const offer of tutor.subjects) {
-      for (const locality of tutor.localitySlugs) {
-        const key = `${offer.subjectSlug}::${locality}`;
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+    const counts = new Map<string, number>();
+    for (const tutor of source()) {
+      for (const offer of tutor.subjects) {
+        for (const locality of tutor.localitySlugs) {
+          const key = `${offer.subjectSlug}::${locality}`;
+          counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
       }
     }
-  }
 
-  return [...counts.entries()].map(([key, count]) => {
-    const [subject, locality] = key.split("::");
-    return { subject, locality, count };
+    return [...counts.entries()].map(([key, count]) => {
+      const [subject, locality] = key.split("::");
+      return { subject, locality, count };
+    });
   });
 }

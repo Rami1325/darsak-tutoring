@@ -375,6 +375,60 @@ export async function searchTutors(
   };
 }
 
+/**
+ * Everything a landing page needs about its match set, in one round trip.
+ *
+ * Was four: a `searchTutors` call whose row and hydrate queries were thrown
+ * away for its `total`, plus a count per mode. Multiplied by ~1,300 prerendered
+ * pages, that is what made a production build spend an hour waiting on the
+ * network with a single worker.
+ *
+ * The mode split is done with `filter` rather than by re-running the whole
+ * query, which works because of how the locality rule already composes: when a
+ * locality is given, the base filter is "serves this town *or* teaches online".
+ * Inside that set, the online tutors are exactly `teaches_online`, and the
+ * in-person ones are exactly those who serve the town — so both fall out of the
+ * same scan.
+ */
+export async function landingStats(params: TutorSearchParams = {}): Promise<{
+  total: number;
+  online: number;
+  inPerson: number;
+  priceMin?: number;
+  priceMax?: number;
+}> {
+  const db = getDb();
+  const price = minPriceExpr(params.subject);
+
+  const servesLocality = params.locality
+    ? sql`exists (
+        select 1 from tutor_localities tl
+        join localities l on l.id = tl.locality_id and l.slug = ${params.locality}
+        where tl.tutor_id = ${tutors.profileId}
+      )`
+    : sql`true`;
+
+  const [row] = await db
+    .select({
+      total: sql<number>`count(*)`,
+      online: sql<number>`count(*) filter (where ${tutors.teachesOnline})`,
+      inPerson: sql<number>`count(*) filter (where ${tutors.teachesInPerson} and ${servesLocality})`,
+      priceMin: sql<number | null>`min(${price})`,
+      priceMax: sql<number | null>`max(${price})`,
+    })
+    .from(tutors)
+    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
+    .where(buildFilters({ ...params, mode: undefined }));
+
+  return {
+    total: Number(row?.total ?? 0),
+    online: Number(row?.online ?? 0),
+    inPerson: Number(row?.inPerson ?? 0),
+    priceMin: row?.priceMin != null ? Number(row.priceMin) : undefined,
+    priceMax: row?.priceMax != null ? Number(row.priceMax) : undefined,
+  };
+}
+
 export async function countTutors(
   params: TutorSearchParams = {},
 ): Promise<number> {
