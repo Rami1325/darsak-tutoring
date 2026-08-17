@@ -90,6 +90,10 @@ function toInquiry(row: InquiryRow): InquirySummary {
  *
  * The tutor join is a left join on purpose: the other party may be a student,
  * and a tutor whose profile is unpublished is still someone you can talk to.
+ *
+ * `profiles.phone` is deliberately not selected. Contact happens in the thread;
+ * no one's number is shown to anyone else, and leaving the column out of the
+ * projection is what makes that true regardless of what a component does later.
  */
 async function loadCounterparts(ids: string[]): Promise<Map<string, Counterpart>> {
   if (ids.length === 0) return new Map();
@@ -98,7 +102,6 @@ async function loadCounterparts(ids: string[]): Promise<Map<string, Counterpart>
     .select({
       profileId: profiles.id,
       name: profiles.fullName,
-      phone: profiles.phone,
       tutorSlug: tutors.slug,
       isActive: tutors.isActive,
       verificationStatus: tutors.verificationStatus,
@@ -113,7 +116,6 @@ async function loadCounterparts(ids: string[]): Promise<Map<string, Counterpart>
       {
         profileId: row.profileId,
         name: row.name,
-        phone: row.phone,
         tutorSlug: row.isActive ? (row.tutorSlug ?? undefined) : undefined,
         verified: row.verificationStatus === "verified",
       } satisfies Counterpart,

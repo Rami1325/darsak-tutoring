@@ -1,4 +1,4 @@
-import { BadgeCheck, ChevronLeft, MessageCircle, Phone } from "lucide-react";
+import { BadgeCheck, ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -14,10 +14,8 @@ import { SiteHeader } from "@/components/site/site-header";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
-import { formatIsraeliPhone } from "@/lib/auth/phone";
 import { requireProfile } from "@/lib/auth/session";
 import { blockUser, unblockUser } from "@/lib/contact/actions";
-import { telUrl, whatsappUrl } from "@/lib/contact/whatsapp";
 import { getThread } from "@/lib/messaging/queries";
 import { tutorHref } from "@/lib/routes";
 
@@ -50,13 +48,8 @@ export default async function ThreadPage({ params }: Props) {
   const typedLocale = locale as Locale;
   const t = await getTranslations("messages");
   const safety = await getTranslations("safety");
-  const contact = await getTranslations("contact");
 
   const { counterpart } = thread;
-  const wa = whatsappUrl(
-    counterpart.phone,
-    contact("waGreeting", { name: counterpart.name }),
-  );
 
   return (
     <>
@@ -102,36 +95,23 @@ export default async function ThreadPage({ params }: Props) {
                   <BadgeCheck className="size-4 shrink-0 text-primary" aria-hidden />
                 )}
               </h1>
-              <p className="numeric text-sm text-muted-foreground">
-                {formatIsraeliPhone(counterpart.phone)}
-              </p>
-            </div>
-          </div>
+              {/*
+                Name and badge only. Neither party's phone number appears here
+                or anywhere else — the thread below is the contact channel, and
+                a number handed to a stranger is not something either side can
+                take back.
 
-          {/*
-            WhatsApp is the dominant channel here, so handing the conversation
-            over is a feature rather than leakage — the reputation record and
-            the discovery that produced this contact both stay with us.
-          */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              size="xl"
-              variant="outline"
-              render={<a href={telUrl(counterpart.phone)} />}
-            >
-              <Phone className="size-4" aria-hidden />
-              {contact("call")}
-            </Button>
-            {wa && (
-              <Button
-                size="xl"
-                variant="outline"
-                render={<a href={wa} target="_blank" rel="noopener noreferrer" />}
-              >
-                <MessageCircle className="size-4" aria-hidden />
-                {contact("openWhatsApp")}
-              </Button>
-            )}
+                Only the tutor side gets a label, because that is the only one
+                we know for certain. The other party signed up as a student but
+                is very often a parent, and calling a parent "student" in their
+                own inbox is worse than saying nothing.
+              */}
+              {counterpart.tutorSlug && (
+                <p className="truncate text-sm text-muted-foreground">
+                  {t("partyTutor")}
+                </p>
+              )}
+            </div>
           </div>
         </header>
 

@@ -581,7 +581,20 @@ export const subscriptions = pgTable(
 
 /* ──────────────────── Instrumentation & safety ──────────────────── */
 
-/** Phone reveal is a tracked lead event, not a leak. The incumbent does this. */
+/**
+ * Retained, not written to.
+ *
+ * The incumbent has a "reveal phone" button and treats it as an instrumented
+ * lead event. We built the same thing and then took it out: no one's number —
+ * tutor's or student's — is shown to anyone else anywhere in the product. A
+ * personal mobile handed to strangers in a community this tightly networked is
+ * not something either side can take back, and the in-app thread carries the
+ * conversation instead.
+ *
+ * The table stays because dropping it would destroy rows for no benefit, and
+ * because an opt-in "share my number with this person" would land here rather
+ * than needing a new shape. Nothing writes to it today.
+ */
 export const phoneReveals = pgTable(
   "phone_reveals",
   {

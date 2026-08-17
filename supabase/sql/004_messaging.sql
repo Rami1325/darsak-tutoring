@@ -130,8 +130,9 @@ create policy "admins resolve reports" on public.reports
   for update using (public.is_admin()) with check (public.is_admin());
 
 -- ── Phone reveals ───────────────────────────────────────────────────────────
--- A tutor can see how many people asked for their number; nobody sees who,
--- beyond what the lead itself already shows.
+-- Nothing writes to this table any more: no one's number is shown to anyone
+-- else in the product. The policy stays owner-scoped so the historical rows,
+-- and any future opt-in sharing, fail closed rather than open.
 
 create policy "tutors read own reveals" on public.phone_reveals
   for select using (tutor_id = auth.uid() or public.is_admin());
@@ -164,24 +165,20 @@ create policy "tutors manage own exceptions" on public.availability_exceptions
   for all using (tutor_id = auth.uid()) with check (tutor_id = auth.uid());
 
 -- ── Counterpart profiles ────────────────────────────────────────────────────
--- 002 restricts `profiles` to the owner. Someone you are already in a
--- conversation with is not a stranger — the thread shows their name and number
--- either way, so a client-side read of the same fields changes nothing.
+-- Once let a conversation party read the counterpart's `profiles` row from the
+-- browser, on the reasoning that the thread showed their name and number
+-- anyway. It no longer shows the number, and RLS is row-level — a policy cannot
+-- hand over the name while withholding the phone column beside it. So the
+-- policy is gone and `profiles` is owner-only again, as 002 has it.
 --
--- Dropped by name rather than through the loop above: `profiles` also carries
+-- The thread's counterpart name comes from Drizzle, which reads as the database
+-- owner and selects the name without ever selecting the phone.
+--
+-- Dropped by name rather than through the sweep above: `profiles` also carries
 -- 002's policies, and sweeping that table would remove them without recreating
 -- them whenever this file is applied on its own.
 
 drop policy if exists "profiles read conversation counterpart" on public.profiles;
-
-create policy "profiles read conversation counterpart" on public.profiles
-  for select using (
-    exists (
-      select 1 from public.conversations c
-      where (c.student_id = auth.uid() and c.tutor_id = profiles.id)
-         or (c.tutor_id = auth.uid() and c.student_id = profiles.id)
-    )
-  );
 
 -- ── Inbox ordering ──────────────────────────────────────────────────────────
 -- Maintained by trigger rather than in the action, so a row inserted by any

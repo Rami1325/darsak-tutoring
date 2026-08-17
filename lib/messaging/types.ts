@@ -20,11 +20,17 @@ export type InquiryStatus =
   | "declined"
   | "expired";
 
+/**
+ * The other person in a conversation.
+ *
+ * Deliberately carries no phone number. Nobody's number is shown to anybody
+ * else anywhere in the product, and the cheapest way to guarantee that is for
+ * the number never to leave the database layer — a field that is never selected
+ * cannot be leaked into HTML by a later change to a component.
+ */
 export type Counterpart = {
   profileId: string;
   name: string;
-  /** E.164. Both sides see it once a conversation exists — see `docs/02`. */
-  phone: string;
   /** Set when the counterpart is a tutor with a published profile. */
   tutorSlug?: string;
   verified: boolean;

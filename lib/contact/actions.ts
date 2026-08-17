@@ -1,122 +1,25 @@
 "use server";
 
-import { createHash } from "node:crypto";
-
-import { and, count, eq, gte, isNotNull, or } from "drizzle-orm";
-import { headers } from "next/headers";
+import { and, eq, or } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { getProfile, requireProfile } from "@/lib/auth/session";
-import {
-  blocks,
-  conversations,
-  getDb,
-  phoneReveals,
-  profiles,
-  reports,
-  tutors,
-} from "@/lib/db";
+import { requireProfile } from "@/lib/auth/session";
+import { blocks, conversations, getDb, reports, tutors } from "@/lib/db";
 
 /**
- * Contact and safety.
+ * Safety: reporting and blocking.
  *
- * Phone reveal is a tracked lead event, not a leak — the incumbent does the
- * same, and in a market where WhatsApp is the dominant channel, refusing to
- * hand over a number just moves the conversation somewhere we cannot count.
- *
- * It does require a session. That is not friction for its own sake: an
- * anonymous reveal endpoint is a scraper for every tutor's personal mobile
- * number, and losing a tutor's number to a spam list is the single fastest way
- * to lose the tutor.
+ * There is no phone-reveal action, by product decision. Nobody's number —
+ * tutor's or student's — is shown to anybody else anywhere in the product, so
+ * the in-app thread is the whole contact channel. The incumbent reveals numbers
+ * and treats it as an instrumented lead event; we don't, because a personal
+ * mobile handed to strangers in a community this tightly networked is not
+ * something a tutor can take back.
  */
-
-export type RevealState =
-  | { status: "idle" }
-  | { status: "needsAuth" }
-  | { status: "error"; message: string }
-  | { status: "revealed"; phone: string };
 
 export type ReportState = { error?: string; ok?: boolean };
-
-/** Generous for a person, tight for a script. */
-const MAX_REVEALS_PER_HOUR = 40;
-
-/**
- * Salted so the table cannot be reversed into a list of visitor IPs by anyone
- * who gets a database dump. Unset in development, which is fine — the hash is
- * for rate-limit bookkeeping, not for identifying anyone.
- */
-async function hashViewerIp() {
-  const headerList = await headers();
-  const forwarded = headerList.get("x-forwarded-for") ?? "";
-  const ip = forwarded.split(",")[0]?.trim() || headerList.get("x-real-ip");
-  if (!ip) return null;
-
-  const salt = process.env.IP_HASH_SALT ?? "darsak-dev";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 64);
-}
-
-export async function revealPhone(tutorSlug: string): Promise<RevealState> {
-  const t = await getTranslations("contact.errors");
-  const profile = await getProfile();
-  if (!profile) return { status: "needsAuth" };
-
-  const db = getDb();
-
-  const [tutor] = await db
-    .select({ profileId: tutors.profileId, phone: profiles.phone })
-    .from(tutors)
-    .innerJoin(profiles, eq(profiles.id, tutors.profileId))
-    .where(
-      and(
-        eq(tutors.slug, tutorSlug),
-        eq(tutors.isActive, true),
-        isNotNull(tutors.publishedAt),
-      ),
-    )
-    .limit(1);
-
-  if (!tutor) return { status: "error", message: t("tutorGone") };
-
-  // A tutor who blocked someone should not have their number handed to them.
-  const [blocked] = await db
-    .select({ blockerId: blocks.blockerId })
-    .from(blocks)
-    .where(
-      and(
-        eq(blocks.blockerId, tutor.profileId),
-        eq(blocks.blockedId, profile.id),
-      ),
-    )
-    .limit(1);
-
-  if (blocked) return { status: "error", message: t("blocked") };
-
-  const since = new Date(Date.now() - 60 * 60 * 1000);
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(phoneReveals)
-    .where(
-      and(
-        eq(phoneReveals.viewerId, profile.id),
-        gte(phoneReveals.createdAt, since),
-      ),
-    );
-
-  if (Number(total) >= MAX_REVEALS_PER_HOUR) {
-    return { status: "error", message: t("tooMany") };
-  }
-
-  await db.insert(phoneReveals).values({
-    tutorId: tutor.profileId,
-    viewerId: profile.id,
-    ipHash: await hashViewerIp(),
-  });
-
-  return { status: "revealed", phone: tutor.phone };
-}
 
 /* ── Report ──────────────────────────────────────────────────────────────── */
 

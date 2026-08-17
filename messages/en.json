@@ -164,7 +164,7 @@
     "experience": "Experience",
     "similarTutors": "Similar tutors",
     "notFound": "Tutor not found",
-    "contactHint": "Sending a request is free — it reaches the tutor directly, and you can see their phone number once you sign in."
+    "contactHint": "Sending a request is free — it reaches the tutor directly, and the conversation continues here on Darsak."
   },
   "forTutors": {
     "title": "Teach on Darsak — no commission on your lessons",
@@ -416,21 +416,13 @@
       "notFound": "We couldn't find this conversation.",
       "blocked": "We can't deliver this message.",
       "tooMany": "You've sent a lot of messages in a short time. Wait a moment."
-    }
+    },
+    "partyTutor": "Tutor"
   },
   "contact": {
-    "showPhone": "Show phone number",
-    "openWhatsApp": "WhatsApp",
-    "call": "Call",
     "share": "Share",
     "shareText": "{name} on Darsak: {url}",
-    "waGreeting": "Hello {name}, I found you on Darsak and wanted to ask about private lessons.",
-    "signInToSeePhone": "Sign in to see the number.",
-    "signIn": "Sign in",
     "errors": {
-      "tutorGone": "This tutor's profile isn't available right now.",
-      "blocked": "We can't show this number.",
-      "tooMany": "You've asked for a lot of numbers this hour. Try again shortly.",
       "reportReason": "Write a reason for the report — at least 10 characters.",
       "reportTarget": "We couldn't find what you're reporting."
     }

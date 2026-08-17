@@ -6,6 +6,7 @@ import {
   MapPin,
   Monitor,
   Send,
+  Share2,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -13,7 +14,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { ContactActions } from "@/components/contact/contact-actions";
 import { ReportDialog } from "@/components/contact/report-dialog";
 import { ScopedMessages } from "@/components/i18n/scoped-messages";
 import { Price } from "@/components/marketplace/price";
@@ -31,6 +31,7 @@ import {
   getTutorBySlug,
   searchTutors,
 } from "@/lib/data/tutors";
+import { whatsappShareUrl } from "@/lib/contact/whatsapp";
 import { pickText } from "@/lib/data/types";
 import {
   absoluteUrl,
@@ -84,6 +85,7 @@ export default async function TutorPage({ params }: Props) {
 
   const typedLocale = locale as Locale;
   const t = await getTranslations("tutorProfile");
+  const contact = await getTranslations("contact");
   const common = await getTranslations("common");
   const tTutors = await getTranslations("tutors");
   const modes = await getTranslations("modes");
@@ -183,12 +185,12 @@ export default async function TutorPage({ params }: Props) {
           </div>
 
           {/*
-            Contact, on a page that stays statically generated.
-            The inquiry form is its own route because it reads the session;
-            phone reveal and sharing are Client Components that resolve the
-            viewer at click time. Nothing here reads a cookie during render.
+            Contact, on a page that stays statically generated. The inquiry form
+            is its own route because it reads the session; nothing here reads a
+            cookie during render, and none of it needs client JavaScript — the
+            share link carries a URL, not a phone number.
           */}
-          <div className="mt-6 space-y-3 border-t border-border/70 pt-5">
+          <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-border/70 pt-5">
             <Button
               size="2xl"
               className="w-full sm:w-auto"
@@ -198,17 +200,31 @@ export default async function TutorPage({ params }: Props) {
               {t("contact")}
             </Button>
 
-            <ScopedMessages namespaces={["contact"]}>
-              <ContactActions
-                tutorSlug={slug}
-                tutorName={name}
-                profileUrl={absoluteUrl(basePath)}
-                next={basePath}
-              />
-            </ScopedMessages>
-
-            <p className="text-xs text-muted-foreground">{t("contactHint")}</p>
+            <Button
+              size="2xl"
+              variant="ghost"
+              className="w-full sm:w-auto"
+              render={
+                <a
+                  href={whatsappShareUrl(
+                    contact("shareText", {
+                      name,
+                      url: absoluteUrl(basePath),
+                    }),
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                />
+              }
+            >
+              <Share2 className="size-5" aria-hidden />
+              {contact("share")}
+            </Button>
           </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            {t("contactHint")}
+          </p>
         </header>
 
         {bio && (
