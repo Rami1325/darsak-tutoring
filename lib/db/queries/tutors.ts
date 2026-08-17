@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, count, desc, eq, exists, gte, inArray, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, gte, isNotNull, lte, or, sql, type SQL } from "drizzle-orm";
 
 import type {
   InstructionLanguage,
@@ -14,6 +14,7 @@ import type {
   TutorSummary,
 } from "@/lib/data/types";
 import { getDb } from "@/lib/db";
+import type { Level } from "@/lib/taxonomy/types";
 import {
   lessons,
   localities,
@@ -260,6 +261,8 @@ type TutorRow = {
   lessonsCount: number;
   responseTimeSec: number | null;
   foundingTutor: boolean;
+  offers: { subjectSlug: string; level: Level | null; pricePerHour: number }[];
+  areas: string[];
 };
 
 const tutorColumns = {
@@ -288,37 +291,53 @@ const tutorColumns = {
   lessonsCount: tutors.lessonsCount,
   responseTimeSec: tutors.responseTimeSec,
   foundingTutor: tutors.foundingTutor,
+  /*
+   * The nested lists, aggregated in the same round trip rather than fetched by
+   * two follow-up queries.
+   *
+   * `json_agg` in a correlated subquery, not a join: joining subjects and
+   * localities directly would multiply every tutor row by the product of the
+   * two, which is the row explosion the previous two-query shape existed to
+   * avoid. This keeps one row per tutor and still costs one trip.
+   *
+   * `tutors.profile_id` is written out rather than interpolated. Drizzle renders
+   * a column inside a select-list expression *unqualified*, and an unqualified
+   * name resolves against the subquery's own tables first — which is exactly
+   * how the inbox's unread count silently counted nothing for a day.
+   */
+  offers: sql<
+    { subjectSlug: string; level: Level | null; pricePerHour: number }[]
+  >`(
+    select coalesce(
+      json_agg(json_build_object(
+        'subjectSlug', s.slug,
+        'level', ts.level,
+        'pricePerHour', ts.price_per_hour
+      ) order by ts.price_per_hour),
+      '[]'::json
+    )
+    from tutor_subjects ts
+    join subjects s on s.id = ts.subject_id
+    where ts.tutor_id = tutors.profile_id
+  )`,
+  areas: sql<string[]>`(
+    select coalesce(json_agg(l.slug order by l.slug), '[]'::json)
+    from tutor_localities tl
+    join localities l on l.id = tl.locality_id
+    where tl.tutor_id = tutors.profile_id
+  )`,
 };
 
-async function hydrate(rows: TutorRow[]): Promise<TutorSummary[]> {
-  if (rows.length === 0) return [];
-
-  const db = getDb();
-  const ids = rows.map((row) => row.profileId);
-
-  // Two bulk queries keyed on this page of ids — not one wide join, which would
-  // multiply every tutor row by subjects × localities.
-  const [offers, areas] = await Promise.all([
-    db
-      .select({
-        tutorId: tutorSubjects.tutorId,
-        subjectSlug: subjects.slug,
-        level: tutorSubjects.level,
-        pricePerHour: tutorSubjects.pricePerHour,
-      })
-      .from(tutorSubjects)
-      .innerJoin(subjects, eq(subjects.id, tutorSubjects.subjectId))
-      .where(inArray(tutorSubjects.tutorId, ids)),
-    db
-      .select({
-        tutorId: tutorLocalities.tutorId,
-        localitySlug: localities.slug,
-      })
-      .from(tutorLocalities)
-      .innerJoin(localities, eq(localities.id, tutorLocalities.localityId))
-      .where(inArray(tutorLocalities.tutorId, ids)),
-  ]);
-
+/**
+ * Row → view model. No longer async in spirit: the nested lists arrive with the
+ * row, so this is pure shaping.
+ *
+ * It was two extra bulk queries keyed on the page of ids. On a landing page
+ * that made four sequential round trips — rows, totals, subjects, localities —
+ * because `max: 1` serialises even the pairs written as `Promise.all`. Times
+ * ~1,300 pages on Vercel's single build worker, that was most of a deploy.
+ */
+function hydrate(rows: TutorRow[]): TutorSummary[] {
   return rows.map((row) => ({
     slug: row.slug,
     name: toTutorName(row),
@@ -329,16 +348,12 @@ async function hydrate(rows: TutorRow[]): Promise<TutorSummary[]> {
     lessonsCount: row.lessonsCount,
     yearsExperience: row.yearsExperience ?? 0,
     education: toLocalized(row.educationAr, row.educationHe, row.educationEn),
-    subjects: offers
-      .filter((offer) => offer.tutorId === row.profileId)
-      .map((offer) => ({
-        subjectSlug: offer.subjectSlug,
-        level: offer.level ?? undefined,
-        pricePerHour: offer.pricePerHour,
-      })),
-    localitySlugs: areas
-      .filter((area) => area.tutorId === row.profileId)
-      .map((area) => area.localitySlug),
+    subjects: (row.offers ?? []).map((offer) => ({
+      subjectSlug: offer.subjectSlug,
+      level: offer.level ?? undefined,
+      pricePerHour: Number(offer.pricePerHour),
+    })),
+    localitySlugs: row.areas ?? [],
     teachesOnline: row.teachesOnline,
     teachesInPerson: row.teachesInPerson,
     languages: row.languages,
@@ -382,7 +397,7 @@ export async function searchTutors(
   const total = Number(totals?.total ?? 0);
 
   return {
-    tutors: await hydrate(rows as TutorRow[]),
+    tutors: hydrate(rows as TutorRow[]),
     total,
     page,
     perPage,
@@ -536,7 +551,7 @@ export async function getTutorBySlug(
 
   if (!row) return null;
 
-  const [summary] = await hydrate([row as TutorRow]);
+  const [summary] = hydrate([row as TutorRow]);
 
   const reviewRows = await db
     .select({
