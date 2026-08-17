@@ -2,9 +2,10 @@ import type { MetadataRoute } from "next";
 
 import { usingFixtures } from "@/lib/data/tutors";
 import { absoluteUrl } from "@/lib/routes";
+import { siteConfig } from "@/lib/site";
 
 /**
- * Indexing is opt-in, and two conditions have to hold.
+ * Indexing is opt-in, and three conditions have to hold.
  *
  * **Real supply.** On fixtures the directory renders ~1,300 pages of invented
  * tutors. That is exactly the thin-content pattern the whole SEO strategy is
@@ -16,11 +17,27 @@ import { absoluteUrl } from "@/lib/routes";
  * is the classic way to split ranking signals across hosts you did not mean to
  * publish.
  *
- * Both flip automatically: connect a database with published tutors and deploy
- * to production, and the directory opens to crawlers with no code change.
+ * **The real domain.** A database full of demo tutors passes the supply test
+ * without being real supply, and `*.vercel.app` is not the domain this product
+ * intends to rank on. Google picking the deployment URL as canonical before
+ * `darsak.co.il` exists is a mess to unwind later — cheaper to never let it
+ * start. Attaching the custom domain is the switch.
+ *
+ * All three flip on their own; there is nothing to remember on launch day.
  */
 const deploymentEnv = process.env.VERCEL_ENV ?? "development";
-const indexable = !usingFixtures && deploymentEnv === "production";
+
+function onCanonicalDomain() {
+  try {
+    const { hostname } = new URL(siteConfig.url);
+    return !hostname.endsWith(".vercel.app") && hostname !== "localhost";
+  } catch {
+    return false;
+  }
+}
+
+const indexable =
+  !usingFixtures && deploymentEnv === "production" && onCanonicalDomain();
 
 export default function robots(): MetadataRoute.Robots {
   if (!indexable) {
