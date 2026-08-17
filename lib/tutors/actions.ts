@@ -1,13 +1,14 @@
 "use server";
 
 import { eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { getLocale, getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { redirect } from "@/i18n/navigation";
 import { requireProfile } from "@/lib/auth/session";
 import {
+  availability,
   getDb,
   localities,
   profiles,
@@ -16,6 +17,7 @@ import {
   tutorSubjects,
   tutors,
 } from "@/lib/db";
+import { GRID_END_HOUR, GRID_START_HOUR } from "@/lib/scheduling/constants";
 
 /**
  * Tutor onboarding.
@@ -374,6 +376,81 @@ export async function publishProfile(
 
   const locale = await getLocale();
   redirect({ href: "/dashboard", locale });
+  return { ok: true };
+}
+
+/* ── Availability ────────────────────────────────────────────────────────── */
+
+/**
+ * The tutor's weekly pattern, saved as `weekday:hour` checkboxes.
+ *
+ * Consecutive hours are merged back into ranges before writing: the editor
+ * speaks in hours because tapping one is easy, but "Tuesday 16:00–20:00" is one
+ * row rather than four, and it is the form a human reading the table expects.
+ *
+ * Replaced wholesale each save, so unticking an hour actually removes it —
+ * matching how subjects and localities already behave in this file.
+ */
+export async function saveAvailability(
+  _prev: StepState,
+  formData: FormData,
+): Promise<StepState> {
+  const profile = await requireProfile();
+  const db = getDb();
+
+  const byWeekday = new Map<number, number[]>();
+
+  for (const raw of formData.getAll("slot")) {
+    const [weekdayPart, hourPart] = String(raw).split(":");
+    const weekday = Number(weekdayPart);
+    const hour = Number(hourPart);
+
+    if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) continue;
+    if (!Number.isInteger(hour) || hour < GRID_START_HOUR || hour >= GRID_END_HOUR) {
+      continue;
+    }
+
+    const hours = byWeekday.get(weekday) ?? [];
+    hours.push(hour);
+    byWeekday.set(weekday, hours);
+  }
+
+  const rows: { tutorId: string; weekday: number; startTime: string; endTime: string }[] =
+    [];
+
+  for (const [weekday, hours] of byWeekday) {
+    const sorted = [...new Set(hours)].sort((a, b) => a - b);
+
+    let start = sorted[0];
+    let previous = sorted[0];
+
+    for (const hour of sorted.slice(1)) {
+      if (hour === previous + 1) {
+        previous = hour;
+        continue;
+      }
+      rows.push({
+        tutorId: profile.id,
+        weekday,
+        startTime: `${String(start).padStart(2, "0")}:00`,
+        endTime: `${String(previous + 1).padStart(2, "0")}:00`,
+      });
+      start = hour;
+      previous = hour;
+    }
+
+    rows.push({
+      tutorId: profile.id,
+      weekday,
+      startTime: `${String(start).padStart(2, "0")}:00`,
+      endTime: `${String(previous + 1).padStart(2, "0")}:00`,
+    });
+  }
+
+  await db.delete(availability).where(eq(availability.tutorId, profile.id));
+  if (rows.length) await db.insert(availability).values(rows);
+
+  refresh();
   return { ok: true };
 }
 

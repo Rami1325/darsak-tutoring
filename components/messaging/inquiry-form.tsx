@@ -4,6 +4,10 @@ import { Loader2, LogIn, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useActionState, useEffect, useRef } from "react";
 
+import {
+  SlotPicker,
+  type PickerDay,
+} from "@/components/scheduling/slot-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +25,8 @@ export type InquiryFormProps = {
   levels: InquiryOption[];
   teachesOnline: boolean;
   teachesInPerson: boolean;
+  /** Open slots for the next two weeks, generated and formatted server-side. */
+  days: PickerDay[];
   source: string;
   defaults: { subject?: string; level?: string; mode?: string };
   /** Absent when signed out — the form then routes through sign-in instead. */
@@ -48,6 +54,7 @@ export function InquiryForm({
   levels,
   teachesOnline,
   teachesInPerson,
+  days,
   source,
   defaults,
   signedIn,
@@ -175,9 +182,18 @@ export function InquiryForm({
         </div>
       </fieldset>
 
-      {/* Shown for in-person lessons only — see `.locality-field` in globals.css. */}
+      {/*
+        Travel cost is quoted per request, not per profile — the tutor cannot
+        price the trip until they know where the lesson is. So the student is
+        told a cost may be added, without a number nobody can stand behind yet.
+        Shown for in-person only; see `.in-person-only` in globals.css.
+      */}
+      <p className="in-person-only rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        {t("travelNote")}
+      </p>
+
       {localities.length > 0 && (
-        <div className="locality-field">
+        <div className="in-person-only">
           <Field label={t("localityLabel")} htmlFor="localitySlug">
             <NativeSelect id="localitySlug" name="localitySlug" defaultValue="">
               <option value="">{t("choose")}</option>
@@ -204,30 +220,29 @@ export function InquiryForm({
         />
       </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label={t("budgetLabel")} htmlFor="budgetMax" hint={t("budgetHint")}>
-          <Input
-            id="budgetMax"
-            name="budgetMax"
-            type="number"
-            inputMode="numeric"
-            min={20}
-            max={2000}
-            dir="ltr"
-            className="h-12 text-base"
-          />
-        </Field>
-
-        <Field label={t("timesLabel")} htmlFor="preferredTimes">
-          <Input
-            id="preferredTimes"
-            name="preferredTimes"
-            maxLength={200}
-            placeholder={t("timesPlaceholder")}
-            className="h-12 text-base"
-          />
-        </Field>
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium">{t("slotLabel")}</p>
+        <SlotPicker
+          days={days}
+          name="requestedAt"
+          emptyLabel={t("slotEmpty")}
+          clearLabel={t("slotClear")}
+        />
+        <p className="text-xs text-muted-foreground">{t("slotHint")}</p>
       </div>
+
+      <Field label={t("budgetLabel")} htmlFor="budgetMax" hint={t("budgetHint")}>
+        <Input
+          id="budgetMax"
+          name="budgetMax"
+          type="number"
+          inputMode="numeric"
+          min={20}
+          max={2000}
+          dir="ltr"
+          className="h-12 text-base"
+        />
+      </Field>
 
       {state.error && (
         <p

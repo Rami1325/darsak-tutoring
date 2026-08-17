@@ -345,7 +345,17 @@
     "leadsTitle": "Requests and messages",
     "leadsNew": "{count} new requests waiting for your reply",
     "leadsNone": "No new requests right now",
-    "responseTime": "Your typical reply time: {minutes} minutes"
+    "responseTime": "Your typical reply time: {minutes} minutes",
+    "availabilityTitle": "My availability",
+    "availabilitySet": "{hours} hours open each week",
+    "availabilityEmpty": "You haven't set your hours — students can't book"
+  },
+  "availability": {
+    "title": "My availability",
+    "description": "Choose the hours you can teach each week. Students see only these times and can request one — and nothing is booked until you accept.",
+    "backToDashboard": "Back to dashboard",
+    "save": "Save availability",
+    "saved": "Saved ✓"
   },
   "inquiry": {
     "title": "Request a lesson",
@@ -367,8 +377,6 @@
     "messagePlaceholder": "Hello, I'm looking for maths tutoring for my son in 10th grade, geometry especially…",
     "budgetLabel": "Budget per hour",
     "budgetHint": "Optional, in shekels.",
-    "timesLabel": "Times that suit you",
-    "timesPlaceholder": "For example: after 4pm on weekdays",
     "send": "Send request",
     "signInToSend": "Sign in and send",
     "signInHint": "We keep what you wrote — you'll come back to it after verifying.",
@@ -378,8 +386,14 @@
       "tutorGone": "This tutor's profile isn't available right now.",
       "self": "You can't send yourself a request.",
       "blocked": "We can't deliver this request.",
-      "tooMany": "You've sent a lot of requests today. Try again tomorrow."
-    }
+      "tooMany": "You've sent a lot of requests today. Try again tomorrow.",
+      "slotTaken": "That time was just taken. Please pick another."
+    },
+    "slotLabel": "Pick a time",
+    "slotHint": "These are the times the tutor has opened. Nothing is booked until they accept.",
+    "slotEmpty": "This tutor hasn't set their hours yet. Send a request and agree a time in the conversation.",
+    "slotClear": "Clear the selected time",
+    "travelNote": "In-person lessons add a travel cost — the tutor sets it once they know where the lesson is."
   },
   "messages": {
     "title": "Messages",
@@ -402,7 +416,6 @@
     "fieldMode": "Lesson type",
     "fieldLocality": "Locality",
     "fieldBudget": "Budget",
-    "fieldTimes": "Times that suit",
     "accept": "Accept request",
     "decline": "Decline",
     "composerPlaceholder": "Write a message…",
@@ -417,7 +430,15 @@
       "blocked": "We can't deliver this message.",
       "tooMany": "You've sent a lot of messages in a short time. Wait a moment."
     },
-    "partyTutor": "Tutor"
+    "partyTutor": "Tutor",
+    "fieldRequestedAt": "Requested time",
+    "fieldTravel": "Travel",
+    "perTrip": "per lesson",
+    "travelPending": "to be set",
+    "travelCostLabel": "Travel cost (₪)",
+    "travelCostPlaceholder": "e.g. 20",
+    "travelCostSave": "Save",
+    "acceptAndBook": "Accept and book"
   },
   "contact": {
     "share": "Share",

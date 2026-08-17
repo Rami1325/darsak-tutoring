@@ -411,7 +411,22 @@ export const inquiries = pgTable(
     localityId: uuid("locality_id").references(() => localities.id),
     message: text("message"),
     budgetMax: integer("budget_max"),
-    preferredTimes: text("preferred_times"),
+    /**
+     * The slot the student picked out of the tutor's calendar. Absolute, so it
+     * survives the DST changeover that a wall-clock string would not; slots are
+     * generated and displayed in `Asia/Jerusalem`.
+     */
+    requestedAt: timestamp("requested_at", { withTimezone: true }),
+    /**
+     * Travel cost for an in-person lesson, in whole shekels, set by the tutor.
+     *
+     * Deliberately not a profile-level field. What it costs to reach a lesson
+     * depends on where the lesson is, and the tutor only learns that from the
+     * request — so it is filled in per inquiry, once there is an address to
+     * price. Until then the student is told a travel cost may be added, without
+     * a number, rather than being quoted one nobody can stand behind.
+     */
+    travelCost: integer("travel_cost"),
     status: inquiryStatus("status").notNull().default("new"),
     /** Which surface produced the lead — profile, search card, landing page. */
     source: varchar("source", { length: 40 }),

@@ -47,7 +47,8 @@ type InquiryRow = {
   localitySlug: string | null;
   message: string | null;
   budgetMax: number | null;
-  preferredTimes: string | null;
+  requestedAt: Date | null;
+  travelCost: number | null;
   status: InquiryStatus;
   createdAt: Date;
   respondedAt: Date | null;
@@ -63,7 +64,8 @@ const inquiryColumns = {
   localitySlug: localities.slug,
   message: inquiries.message,
   budgetMax: inquiries.budgetMax,
-  preferredTimes: inquiries.preferredTimes,
+  requestedAt: inquiries.requestedAt,
+  travelCost: inquiries.travelCost,
   status: inquiries.status,
   createdAt: inquiries.createdAt,
   respondedAt: inquiries.respondedAt,
@@ -78,7 +80,8 @@ function toInquiry(row: InquiryRow): InquirySummary {
     localitySlug: row.localitySlug ?? undefined,
     message: row.message ?? undefined,
     budgetMax: row.budgetMax ?? undefined,
-    preferredTimes: row.preferredTimes ?? undefined,
+    requestedAt: row.requestedAt ?? undefined,
+    travelCost: row.travelCost ?? undefined,
     status: row.status,
     createdAt: row.createdAt,
     respondedAt: row.respondedAt ?? undefined,

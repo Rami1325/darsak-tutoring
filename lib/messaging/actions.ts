@@ -23,6 +23,7 @@ import {
   conversations,
   getDb,
   inquiries,
+  lessons,
   localities,
   messages,
   subjects,
@@ -30,6 +31,7 @@ import {
 } from "@/lib/db";
 import { findConversation } from "@/lib/messaging/queries";
 import { threadHref } from "@/lib/routes";
+import { DEFAULT_LESSON_MINUTES, isSlotOpen } from "@/lib/scheduling/slots";
 
 /**
  * The connection layer.
@@ -95,7 +97,8 @@ const inquirySchema = z.object({
   localitySlug: z.string().trim().max(80).optional(),
   message: z.string().trim().min(10).max(2000),
   budgetMax: z.coerce.number().int().min(20).max(2000).optional(),
-  preferredTimes: z.string().trim().max(200).optional(),
+  /** ISO instant from the slot picker; re-validated against the calendar. */
+  requestedAt: z.string().datetime().optional(),
   source: z.string().trim().max(40).optional(),
 });
 
@@ -120,7 +123,7 @@ export async function submitInquiry(
     localitySlug: optional(formData.get("localitySlug")),
     message: formData.get("message"),
     budgetMax: optional(formData.get("budgetMax")),
-    preferredTimes: optional(formData.get("preferredTimes")),
+    requestedAt: optional(formData.get("requestedAt")),
     source: optional(formData.get("source")),
   });
 
@@ -200,6 +203,21 @@ export async function submitInquiry(
    */
   const localitySlug = input.mode === "online" ? undefined : input.localitySlug;
 
+  /*
+   * The picker submits an ISO string, so the picker is not what decides whether
+   * a slot is bookable — a POST can carry any instant. The tutor's calendar is
+   * recomputed here and the chosen time has to still be on it, which also
+   * settles the race where two students pick the same hour seconds apart.
+   */
+  let requestedAt: Date | null = null;
+  if (input.requestedAt) {
+    const wanted = new Date(input.requestedAt);
+    if (!(await isSlotOpen(tutor.profileId, wanted))) {
+      return { error: t("slotTaken") };
+    }
+    requestedAt = wanted;
+  }
+
   const [subject, locality] = await Promise.all([
     input.subjectSlug
       ? db
@@ -246,7 +264,7 @@ export async function submitInquiry(
       localityId: locality[0]?.id ?? null,
       message: input.message,
       budgetMax: input.budgetMax ?? null,
-      preferredTimes: input.preferredTimes ?? null,
+      requestedAt,
       source: input.source ?? "profile",
     })
     .returning({ id: inquiries.id });
@@ -435,6 +453,12 @@ export async function markConversationRead(conversationId: string) {
  * Accept or decline, tutor-side. Both are honest answers and declining quickly
  * is worth more to a student than being left on `new`, so the decline button is
  * given the same weight as accept.
+ *
+ * Accepting a request that named a time is what books the lesson. Nothing is
+ * booked before that: the student proposes, the tutor agrees, and only then
+ * does a row appear in `lessons`. In a market where trust is the binding
+ * constraint, a tutor discovering a lesson they never agreed to is the kind of
+ * surprise that loses them.
  */
 export async function setInquiryStatus(formData: FormData) {
   const profile = await requireProfile();
@@ -446,7 +470,15 @@ export async function setInquiryStatus(formData: FormData) {
   if (status !== "accepted" && status !== "declined") return;
 
   const [row] = await db
-    .select({ id: inquiries.id, tutorId: inquiries.tutorId })
+    .select({
+      id: inquiries.id,
+      tutorId: inquiries.tutorId,
+      studentId: inquiries.studentId,
+      subjectId: inquiries.subjectId,
+      localityId: inquiries.localityId,
+      mode: inquiries.mode,
+      requestedAt: inquiries.requestedAt,
+    })
     .from(inquiries)
     .where(and(eq(inquiries.id, inquiryId), eq(inquiries.tutorId, profile.id)))
     .limit(1);
@@ -461,7 +493,92 @@ export async function setInquiryStatus(formData: FormData) {
     })
     .where(eq(inquiries.id, row.id));
 
+  if (status === "accepted" && row.requestedAt) {
+    await bookLesson(row);
+  }
+
   await refreshResponseTime(profile.id);
+
+  refresh();
+}
+
+/**
+ * Turns an accepted request into a scheduled lesson.
+ *
+ * Guarded rather than assumed: an hour can fill between the request arriving
+ * and the tutor getting to it, and accepting twice — a double tap, a stale tab
+ * — must not produce two lessons at the same time.
+ */
+async function bookLesson(inquiry: {
+  id: string;
+  tutorId: string;
+  studentId: string;
+  subjectId: string | null;
+  localityId: string | null;
+  mode: "online" | "in_person";
+  requestedAt: Date | null;
+}) {
+  if (!inquiry.requestedAt) return;
+  const db = getDb();
+
+  const [clash] = await db
+    .select({ id: lessons.id })
+    .from(lessons)
+    .where(
+      and(
+        eq(lessons.tutorId, inquiry.tutorId),
+        eq(lessons.scheduledAt, inquiry.requestedAt),
+        eq(lessons.status, "scheduled"),
+      ),
+    )
+    .limit(1);
+
+  if (clash) return;
+
+  await db.insert(lessons).values({
+    tutorId: inquiry.tutorId,
+    studentId: inquiry.studentId,
+    subjectId: inquiry.subjectId,
+    scheduledAt: inquiry.requestedAt,
+    durationMin: DEFAULT_LESSON_MINUTES,
+    mode: inquiry.mode,
+    location: inquiry.mode === "online" ? "online" : null,
+    localityId: inquiry.localityId,
+    status: "scheduled",
+  });
+}
+
+/* ── Travel cost ─────────────────────────────────────────────────────────── */
+
+/**
+ * What the trip costs, quoted by the tutor once they know where they are going.
+ *
+ * Not a profile-level number: the same tutor's travel cost to the next street
+ * and to the next town are not the same, and a single figure on a profile is
+ * either wrong or padded. Left blank, the student simply sees that a travel
+ * cost will be agreed.
+ */
+export async function setTravelCost(formData: FormData) {
+  const profile = await requireProfile();
+  const db = getDb();
+
+  const inquiryId = String(formData.get("inquiryId") ?? "");
+  if (!z.string().uuid().safeParse(inquiryId).success) return;
+
+  const raw = String(formData.get("travelCost") ?? "").trim();
+  const parsed = z.coerce.number().int().min(0).max(500).safeParse(raw);
+  const travelCost = raw.length === 0 ? null : parsed.success ? parsed.data : null;
+
+  await db
+    .update(inquiries)
+    .set({ travelCost })
+    .where(
+      and(
+        eq(inquiries.id, inquiryId),
+        eq(inquiries.tutorId, profile.id),
+        eq(inquiries.mode, "in_person"),
+      ),
+    );
 
   refresh();
 }

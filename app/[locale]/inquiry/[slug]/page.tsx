@@ -17,9 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { getOwnTutor, getProfile } from "@/lib/auth/session";
-import { getTutorBySlug } from "@/lib/data/tutors";
+import { getTutorBySlug, usingFixtures } from "@/lib/data/tutors";
 import { pickText, tutorPriceRange } from "@/lib/data/types";
 import { inquiryHref, pathFor, tutorHref } from "@/lib/routes";
+import { shortDateLabel, shortWeekdayLabel } from "@/lib/scheduling/labels";
+import { getOpenSlotsBySlug } from "@/lib/scheduling/slots";
 import { findLocality } from "@/lib/taxonomy/localities";
 import { findSubject } from "@/lib/taxonomy/subjects";
 import type { Level } from "@/lib/taxonomy/types";
@@ -73,7 +75,13 @@ export default async function InquiryPage({ params, searchParams }: Props) {
   };
 
   const source = first("from") ?? "profile";
-  const [profile, ownTutor] = await Promise.all([getProfile(), getOwnTutor()]);
+  const [profile, ownTutor, openDays] = await Promise.all([
+    getProfile(),
+    getOwnTutor(),
+    // Fixtures have no availability table to read, and the form is unusable
+    // without an account anyway, so the picker simply comes back empty there.
+    usingFixtures ? Promise.resolve([]) : getOpenSlotsBySlug(slug),
+  ]);
 
   const name = tutor.name[typedLocale];
   const headline = pickText(tutor.headline, typedLocale);
@@ -119,6 +127,18 @@ export default async function InquiryPage({ params, searchParams }: Props) {
   const levelOptions: InquiryOption[] = (
     offeredLevels.length > 0 ? offeredLevels : ALL_LEVELS
   ).map((level) => ({ value: level, label: levelLabels(level) }));
+
+  /*
+   * Day and time labels are resolved here, not in the picker: the client then
+   * renders strings and does no date arithmetic at all, which keeps the whole
+   * Israel-time and DST story on the server in one place.
+   */
+  const pickerDays = openDays.map((day) => ({
+    key: day.key,
+    weekdayLabel: shortWeekdayLabel(typedLocale, day.weekday),
+    dateLabel: shortDateLabel(typedLocale, day.key),
+    slots: day.slots,
+  }));
 
   const isOwnProfile = ownTutor?.slug === slug;
 
@@ -193,6 +213,7 @@ export default async function InquiryPage({ params, searchParams }: Props) {
                 levels={levelOptions}
                 teachesOnline={tutor.teachesOnline}
                 teachesInPerson={tutor.teachesInPerson}
+                days={pickerDays}
                 source={source}
                 defaults={{
                   subject: first("subject"),

@@ -112,6 +112,11 @@ export const pathnames = {
     he: "/הלוח-שלי/אימות",
     en: "/dashboard/verification",
   },
+  "/dashboard/availability": {
+    ar: "/لوحتي/أوقاتي",
+    he: "/הלוח-שלי/הזמינות",
+    en: "/dashboard/availability",
+  },
   /** Internal — stays Latin in every locale on purpose. */
   "/admin": "/admin",
   "/admin/verifications": "/admin/verifications",

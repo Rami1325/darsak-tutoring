@@ -29,6 +29,20 @@
       "when": 1786958315645,
       "tag": "0003_amazing_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786967013271,
+      "tag": "0004_add_scheduling_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786967024440,
+      "tag": "0005_drop_preferred_times",
+      "breakpoints": true
     }
   ]
 }

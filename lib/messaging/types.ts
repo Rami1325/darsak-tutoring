@@ -44,7 +44,10 @@ export type InquirySummary = {
   localitySlug?: string;
   message?: string;
   budgetMax?: number;
-  preferredTimes?: string;
+  /** The slot the student picked, if they picked one. */
+  requestedAt?: Date;
+  /** Whole shekels, quoted by the tutor for an in-person trip. */
+  travelCost?: number;
   status: InquiryStatus;
   createdAt: Date;
   respondedAt?: Date;

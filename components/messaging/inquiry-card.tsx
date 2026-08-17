@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   CalendarClock,
+  Car,
   MapPin,
   Monitor,
   Users,
@@ -11,7 +12,7 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/routing";
 import { formatTimestamp } from "@/lib/format";
-import { setInquiryStatus } from "@/lib/messaging/actions";
+import { setInquiryStatus, setTravelCost } from "@/lib/messaging/actions";
 import type { InquirySummary, Party } from "@/lib/messaging/types";
 import { findLocality } from "@/lib/taxonomy/localities";
 import { findSubject } from "@/lib/taxonomy/subjects";
@@ -115,12 +116,27 @@ export async function InquiryCard({
           </Detail>
         )}
 
-        {inquiry.preferredTimes && (
+        {inquiry.requestedAt && (
           <Detail
             icon={<CalendarClock className="size-3.5" />}
-            label={t("fieldTimes")}
+            label={t("fieldRequestedAt")}
           >
-            {inquiry.preferredTimes}
+            <span className="numeric">
+              {formatTimestamp(inquiry.requestedAt, locale)}
+            </span>
+          </Detail>
+        )}
+
+        {inquiry.mode === "in_person" && (
+          <Detail icon={<Car className="size-3.5" />} label={t("fieldTravel")}>
+            {inquiry.travelCost !== undefined ? (
+              <>
+                <span className="numeric">₪{inquiry.travelCost}</span>{" "}
+                <span className="text-muted-foreground">{t("perTrip")}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">{t("travelPending")}</span>
+            )}
           </Detail>
         )}
       </dl>
@@ -131,13 +147,46 @@ export async function InquiryCard({
         </p>
       )}
 
+      {/*
+        The travel cost box, tutor-side and in-person only. It sits above the
+        accept button on purpose: the cost is part of what the student is being
+        asked to agree to, so quoting it before accepting is the honest order.
+      */}
+      {party === "tutor" && inquiry.mode === "in_person" && (
+        <form
+          action={setTravelCost}
+          className="mt-4 flex flex-wrap items-end gap-2 border-t border-primary/15 pt-3"
+        >
+          <input type="hidden" name="inquiryId" value={inquiry.id} />
+          <label className="flex-1 space-y-1">
+            <span className="block text-xs text-muted-foreground">
+              {t("travelCostLabel")}
+            </span>
+            <input
+              type="number"
+              name="travelCost"
+              min={0}
+              max={500}
+              dir="ltr"
+              inputMode="numeric"
+              defaultValue={inquiry.travelCost ?? ""}
+              placeholder={t("travelCostPlaceholder")}
+              className="h-11 w-full rounded-lg border border-border bg-card px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+          </label>
+          <Button type="submit" size="xl" variant="outline">
+            {t("travelCostSave")}
+          </Button>
+        </form>
+      )}
+
       {awaitingAnswer && (
         <div className="mt-4 flex flex-wrap gap-2">
           <form action={setInquiryStatus}>
             <input type="hidden" name="inquiryId" value={inquiry.id} />
             <input type="hidden" name="status" value="accepted" />
             <Button type="submit" size="xl">
-              {t("accept")}
+              {inquiry.requestedAt ? t("acceptAndBook") : t("accept")}
             </Button>
           </form>
           <form action={setInquiryStatus}>

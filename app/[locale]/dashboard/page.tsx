@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import {
   BadgeCheck,
+  CalendarClock,
   ChevronLeft,
   Clock,
   ExternalLink,
@@ -27,6 +28,7 @@ import {
   countNewInquiries,
   countUnreadMessages,
 } from "@/lib/messaging/queries";
+import { countOpenHours } from "@/lib/scheduling/availability";
 import { tutorHref } from "@/lib/routes";
 import { unpublishProfile } from "@/lib/tutors/actions";
 import { cn } from "@/lib/utils";
@@ -54,7 +56,7 @@ export default async function DashboardPage({ params }: Props) {
     .where(eq(tutors.profileId, profile.id))
     .limit(1);
 
-  const [offers, areas, newInquiries, unread] = tutor
+  const [offers, areas, newInquiries, unread, openHours] = tutor
     ? await Promise.all([
         db
           .select({ id: tutorSubjects.id })
@@ -66,8 +68,9 @@ export default async function DashboardPage({ params }: Props) {
           .where(eq(tutorLocalities.tutorId, profile.id)),
         countNewInquiries(profile.id),
         countUnreadMessages(profile.id),
+        countOpenHours(profile.id),
       ])
-    : [[], [], 0, 0];
+    : [[], [], 0, 0, 0];
 
   // Not a tutor yet — send them into the wizard rather than showing an empty
   // dashboard that explains nothing.
@@ -268,6 +271,35 @@ export default async function DashboardPage({ params }: Props) {
                 {unread}
               </span>
             )}
+            <ChevronLeft
+              className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
+              aria-hidden
+            />
+          </Link>
+
+          <Link
+            href="/dashboard/availability"
+            className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "grid size-11 shrink-0 place-items-center rounded-xl",
+                openHours > 0
+                  ? "bg-success/15 text-success"
+                  : "bg-warning/15 text-warning-foreground",
+              )}
+            >
+              <CalendarClock className="size-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{t("availabilityTitle")}</span>
+              <span className="block text-sm text-muted-foreground">
+                {openHours > 0
+                  ? t("availabilitySet", { hours: openHours })
+                  : t("availabilityEmpty")}
+              </span>
+            </span>
             <ChevronLeft
               className="size-4 shrink-0 text-muted-foreground rtl:rotate-180"
               aria-hidden
