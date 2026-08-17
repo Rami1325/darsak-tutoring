@@ -85,6 +85,21 @@ export const pathnames = {
 
   // ── Account surfaces ──────────────────────────────────────────────────────
   "/login": { ar: "/دخول", he: "/כניסה", en: "/login" },
+  /**
+   * Password reset, for the email door only. The emailed link itself lands on
+   * `/api/auth/confirm`, which is outside this map on purpose — the proxy skips
+   * `/api`, so next-intl never tries to give a Supabase-built URL a locale.
+   */
+  "/forgot-password": {
+    ar: "/نسيت-كلمة-السر",
+    he: "/שכחתי-סיסמה",
+    en: "/forgot-password",
+  },
+  "/reset-password": {
+    ar: "/كلمة-سر-جديدة",
+    he: "/סיסמה-חדשה",
+    en: "/reset-password",
+  },
   "/onboarding": {
     ar: "/تسجيل-معلم",
     he: "/הרשמת-מורה",

@@ -160,7 +160,17 @@ site_url = "http://localhost:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://localhost:3000", "https://127.0.0.1:3000"]
+#
+# The `/**` entry is what lets a password-reset link come back to
+# `/api/auth/confirm?next=…`. Supabase matches redirect targets against this
+# list exactly unless a wildcard is given, so a bare origin would reject every
+# link the reset flow sends. The deployed project needs the same entry under
+# Authentication → URL Configuration, or resets fail there and only there.
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:3000/**",
+  "https://127.0.0.1:3000",
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -179,7 +189,9 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+# 8 to match the floor `emailSchema` enforces in lib/auth/actions.ts — a form
+# that accepts what the server then rejects is the worse of the two failures.
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -217,6 +229,22 @@ web3 = 30
 # secret = ""
 
 [auth.email]
+#
+# No SMTP is configured. Locally that is fine — every message goes to Inbucket
+# (http://127.0.0.1:54324), which is how the reset flow is testable without a
+# provider. The deployed project falls back to Supabase's shared sender, which
+# is rate-limited to a handful of mails an hour: enough to prove the flow, not
+# enough to launch on. That is the decision still outstanding.
+#
+# One thing to get right when it is made: the stock recovery template uses
+# `{{ .ConfirmationURL }}`, which routes the reader through Supabase's own
+# verify endpoint and lands on our handler with a `code`. Exchanging that code
+# needs the PKCE verifier cookie, so the link only works in the browser that
+# asked for it — open the mail on a phone, having asked from a laptop, and it
+# fails. Switching the template to link straight to
+# `/api/auth/confirm?token_hash={{ .TokenHash }}&type=recovery` removes that
+# coupling. `app/api/auth/confirm/route.ts` already accepts both shapes.
+#
 # Allow/disallow new user signups via email to your project.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email

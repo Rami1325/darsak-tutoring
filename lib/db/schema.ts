@@ -116,9 +116,23 @@ export const profiles = pgTable(
   {
     id: uuid("id").primaryKey(),
     roles: userRole("roles").array().notNull().default(["student"]),
-    phone: varchar("phone", { length: 20 }).notNull(),
+    /**
+     * Nullable, because email/password is now a second way in and those
+     * accounts have no number at all.
+     *
+     * The unique index below is what forced this: it is `NULLS DISTINCT`, the
+     * Postgres default, so any number of phone-less accounts coexist — whereas
+     * storing `''` for them would have made the second email signup collide
+     * with the first on a constraint whose error message mentions phones.
+     *
+     * Still an identifier and never contact information: nobody's number is
+     * shown to anybody else, which is why nothing outside this table's writers
+     * ever selects the column.
+     */
+    phone: varchar("phone", { length: 20 }),
     phoneVerified: boolean("phone_verified").notNull().default(false),
     email: varchar("email", { length: 255 }),
+    emailVerified: boolean("email_verified").notNull().default(false),
     /**
      * A person's name isn't translated, but it is transliterated. Onboarding
      * asks for the Arabic form and, optionally, a Latin one; Hebrew is optional

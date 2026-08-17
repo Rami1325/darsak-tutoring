@@ -11,7 +11,7 @@ import { SiteHeader } from "@/components/site/site-header";
 import { Link, redirect } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { safeNext } from "@/lib/auth/redirect";
-import { getProfile } from "@/lib/auth/session";
+import { getAuthUser, getProfile } from "@/lib/auth/session";
 import { alternatePaths, alternatesMetadata } from "@/lib/seo/alternates";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -53,6 +53,17 @@ export default async function LoginPage({ params, searchParams }: Props) {
     });
   }
 
+  /*
+   * Signed in, but no profile row: the third step was never finished.
+   *
+   * Reached by anyone who closed the tab on the name-and-role step, and — on a
+   * project that requires email confirmation — by everyone who signs up that
+   * way, since clicking the link in the mail is what creates their session.
+   * Starting the form at the last step is the difference between resuming and
+   * a stranded account that is signed in and invisible to the marketplace.
+   */
+  const user = await getAuthUser();
+
   return (
     <>
       <SiteHeader />
@@ -73,7 +84,7 @@ export default async function LoginPage({ params, searchParams }: Props) {
         <div className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-xs sm:p-6">
           {isSupabaseConfigured ? (
             <ScopedMessages namespaces={["auth"]}>
-              <LoginForm next={next} />
+              <LoginForm next={next} resumeProfile={Boolean(user)} />
             </ScopedMessages>
           ) : (
             <p className="rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning-foreground">
