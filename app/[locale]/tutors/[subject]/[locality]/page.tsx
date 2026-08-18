@@ -23,6 +23,7 @@ import { resolveLocality, resolveSubject } from "@/lib/search/taxonomy";
 import { alternatePaths, alternatesMetadata } from "@/lib/seo/alternates";
 import { breadcrumbJsonLd, faqJsonLd } from "@/lib/seo/json-ld";
 import { buildFaq, landingStats } from "@/lib/seo/landing";
+import { prerenderPairs } from "@/lib/seo/prerender";
 import { findLocality, localities } from "@/lib/taxonomy/localities";
 import { findSubject } from "@/lib/taxonomy/subjects";
 import { localizedSlug } from "@/lib/taxonomy/types";
@@ -39,6 +40,12 @@ export const dynamicParams = true;
  * directory like this comes from. Only pairs with real supply are prerendered,
  * and `load()` 404s anything else — an empty permutation is a doorway page, and
  * enough of them will drag the whole domain's rankings down.
+ *
+ * Capped at the deepest-supply pairs, because this set grows with the
+ * marketplace and the build must not grow with it. `dynamicParams` above
+ * renders the rest on first request, `load()` guards them identically, and
+ * `app/sitemap.ts` still lists every pair — nothing leaves the index, only the
+ * build queue. See `lib/seo/prerender.ts` for the measured numbers.
  */
 export async function generateStaticParams({
   params,
@@ -46,7 +53,7 @@ export async function generateStaticParams({
   params: { locale: string };
 }) {
   const locale = params.locale as Locale;
-  const pairs = await getIndexablePairs();
+  const pairs = await prerenderPairs();
   return pairs
     .map(({ subject, locality }) => {
       const s = findSubject(subject);
