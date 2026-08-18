@@ -140,6 +140,7 @@ export const pathnames = {
   },
   /** Internal — stays Latin in every locale on purpose. */
   "/admin": "/admin",
+  "/admin/reports": "/admin/reports",
   "/admin/verifications": "/admin/verifications",
 
   "/about": { ar: "/من-نحن", he: "/אודות", en: "/about" },

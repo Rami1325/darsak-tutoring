@@ -690,6 +690,18 @@ export const reports = pgTable(
     targetId: uuid("target_id").notNull(),
     reason: text("reason").notNull(),
     status: varchar("status", { length: 30 }).notNull().default("open"),
+    /**
+     * Who closed it and when.
+     *
+     * The state of the row, which is a different thing from the audit trail in
+     * `admin_actions`: that records every action anyone took, this records
+     * where the report currently stands. A queue needs the second without
+     * joining the first on every line.
+     */
+    resolvedBy: uuid("resolved_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -815,5 +827,42 @@ export const notifications = pgTable(
       table.dedupeKey,
       table.createdAt,
     ),
+  ],
+);
+
+/**
+ * What a moderator did, and to whom.
+ *
+ * Append-only, and the reason it exists is that every other protection here is
+ * invisible. Drizzle connects as the database owner and bypasses RLS, so
+ * `requireRole("admin")` on the layout and in each action is the entire thing
+ * standing between a console and everybody's data — and an admin action with no
+ * record is indistinguishable from a bug. This is what makes "who dismissed
+ * that report?" a question with an answer.
+ *
+ * `actor_id` survives the actor: an admin whose account is deleted must not
+ * take the record of their decisions with them, so the reference nulls rather
+ * than cascades.
+ *
+ * Never granted to `anon` or `authenticated`, like the notification tables.
+ */
+export const adminActions = pgTable(
+  "admin_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorId: uuid("actor_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    action: varchar("action", { length: 40 }).notNull(),
+    targetType: varchar("target_type", { length: 30 }).notNull(),
+    targetId: uuid("target_id").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("admin_actions_target_idx").on(table.targetType, table.targetId),
+    index("admin_actions_created_idx").on(table.createdAt),
   ],
 );

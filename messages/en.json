@@ -599,5 +599,38 @@
       "unsupported": "This browser does not support notifications.",
       "installFirst": "On iPhone, add the site to your home screen first."
     }
+  },
+  "admin": {
+    "title": "Moderation",
+    "subtitle": "What is waiting for a human.",
+    "signedInAs": "Signed in as {name}",
+    "queues": {
+      "reports": "Reports",
+      "verifications": "Verifications",
+      "reviews": "Reviews",
+      "waiting": "waiting",
+      "clear": "Nothing waiting",
+      "noProducer": "Nothing feeds this queue yet."
+    },
+    "reports": {
+      "title": "Reports",
+      "open": "Open",
+      "actioned": "Actioned",
+      "dismissed": "Dismissed",
+      "empty": "No reports here.",
+      "reporter": "Reporter",
+      "target": "Reported",
+      "reason": "Reason",
+      "received": "Received",
+      "closedBy": "Closed by",
+      "viewProfile": "Profile",
+      "actionIt": "Actioned",
+      "dismissIt": "Dismiss",
+      "reopen": "Reopen",
+      "unknown": "Unknown",
+      "privacyNote": "Message bodies are deliberately not shown here: a report carries the reporter's own words and the names of both parties, and reading the thread itself is a separate step that gets logged.",
+      "typeTutor": "Tutor",
+      "typeConversation": "Conversation"
+    }
   }
 }
