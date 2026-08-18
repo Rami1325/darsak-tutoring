@@ -6,6 +6,7 @@ import {
   LocaleSwitcher,
   type LocaleSwitcherProps,
 } from "@/components/site/locale-switcher";
+import { ViewerControls } from "@/components/site/viewer-controls";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 
@@ -25,6 +26,7 @@ export function SiteHeader({
   account?: React.ReactNode;
 }) {
   const t = useTranslations("nav");
+  const auth = useTranslations("auth");
   const common = useTranslations("common");
 
   return (
@@ -55,8 +57,21 @@ export function SiteHeader({
           <div className="ms-auto flex items-center gap-2">
             <LocaleSwitcher alternates={alternates} />
 
+            {/*
+              A signed-in viewer on a static page is only discoverable in the
+              browser, so the signed-out controls ship in the HTML and
+              `ViewerControls` swaps them after hydration. The dynamic routes
+              still pass `account` and skip the round trip entirely.
+            */}
             {account ?? (
-              <>
+              <ViewerControls
+                labels={{
+                  dashboard: t("dashboard"),
+                  schedule: t("schedule"),
+                  messages: t("messages"),
+                  signOut: auth("signOut"),
+                }}
+              >
                 <Button
                   variant="ghost"
                   size="sm"
@@ -68,7 +83,7 @@ export function SiteHeader({
                 <Button size="sm" render={<Link href="/for-tutors" />}>
                   {t("becomeTutor")}
                 </Button>
-              </>
+              </ViewerControls>
             )}
           </div>
         </div>

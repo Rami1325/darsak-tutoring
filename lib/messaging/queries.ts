@@ -403,6 +403,33 @@ export async function countNewInquiries(tutorId: string): Promise<number> {
 }
 
 /**
+ * Everything in the inbox waiting on this viewer, as one number.
+ *
+ * Two counts rather than one, because **an inquiry does not create a message**:
+ * `submitInquiry` writes a `conversations` row and an `inquiries` row and stops
+ * there — the only `insert(messages)` in the codebase is inside `sendMessage`.
+ * A tutor's first lead therefore has no unread message behind it, so a badge
+ * built on `countUnreadMessages` alone shows nothing at exactly the moment the
+ * supply side depends on it being seen. The dashboard has always counted both
+ * in its tiles; the header badge counted only the half that is empty for a new
+ * lead.
+ *
+ * Both surfaces read this one function so they cannot drift apart again.
+ */
+export async function countInboxAttention(viewerId: string): Promise<{
+  unread: number;
+  inquiries: number;
+  total: number;
+}> {
+  const [unread, inquiries] = await Promise.all([
+    countUnreadMessages(viewerId),
+    countNewInquiries(viewerId),
+  ]);
+
+  return { unread, inquiries, total: unread + inquiries };
+}
+
+/**
  * The conversation this student already has with this tutor, if any. Lets the
  * inquiry form say "you already asked" instead of opening a second thread.
  */
