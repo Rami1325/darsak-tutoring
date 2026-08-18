@@ -1,30 +1,42 @@
 import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
+import { BRAND_MARK } from "@/lib/brand/mark";
 import { cn } from "@/lib/utils";
 
 /**
- * A stylised dāl (د) — the first letter of درسك — drawn as a path rather than
- * set as type, so the mark renders identically in every locale regardless of
- * which script's webfont happens to be loaded.
+ * The brand mark, coloured by the theme.
+ *
+ * Geometry comes from `lib/brand/mark.ts`, which `scripts/build-icons.ts` also
+ * rasterises into the favicon, the manifest icons and the iOS tile — one shape,
+ * so the logo in the header and the icon on someone's home screen cannot drift
+ * apart. Colour stays as Tailwind tokens here and is baked to hex there,
+ * because this one follows light and dark and an installed icon does not.
  */
 export function BrandMark({ className }: { className?: string }) {
+  const { size, radius, glyph, strokeWidth, dot } = BRAND_MARK;
+
   return (
     <svg
-      viewBox="0 0 32 32"
+      viewBox={`0 0 ${size} ${size}`}
       role="presentation"
       aria-hidden="true"
       className={cn("size-8 shrink-0", className)}
     >
-      <rect width="32" height="32" rx="9" className="fill-primary" />
+      <rect width={size} height={size} rx={radius} className="fill-primary" />
       <path
-        d="M21 10h-6.2a5.6 5.6 0 0 0 0 11.2H16"
+        d={glyph}
         fill="none"
-        strokeWidth="2.6"
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         className="stroke-primary-foreground"
       />
-      <circle cx="16" cy="25" r="1.75" className="fill-primary-foreground" />
+      <circle
+        cx={dot.cx}
+        cy={dot.cy}
+        r={dot.r}
+        className="fill-primary-foreground"
+      />
     </svg>
   );
 }

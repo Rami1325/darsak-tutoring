@@ -18,7 +18,8 @@
     "db:seed:availability": "tsx scripts/seed-availability.ts",
     "check:search": "tsx scripts/check-search.ts",
     "check:i18n": "tsx scripts/check-messages.ts",
-    "check:slots": "tsx scripts/check-scheduling.ts"
+    "check:slots": "tsx scripts/check-scheduling.ts",
+    "build:icons": "tsx scripts/build-icons.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

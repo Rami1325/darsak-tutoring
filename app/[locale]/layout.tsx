@@ -48,6 +48,7 @@ export async function generateMetadata({
       template: `%s | ${brand("name")}`,
     },
     description: home("heroSubtitle"),
+    manifest: `/${locale}/manifest.webmanifest`,
     alternates: {
       canonical: `/${locale}`,
       languages: {
