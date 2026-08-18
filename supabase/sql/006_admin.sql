@@ -54,6 +54,12 @@ end $$;
 
 alter table public.admin_actions enable row level security;
 
+-- Same story as 005: a hosted Supabase project grants the client roles full DML
+-- on a new table by default and a local stack does not, so the revoke is
+-- explicit. Nothing reads the audit trail from a browser — the console queries
+-- it server-side as the database owner.
+revoke all on public.admin_actions from anon, authenticated;
+
 do $$
 declare policy_row record;
 begin

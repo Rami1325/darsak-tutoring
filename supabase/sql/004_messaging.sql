@@ -226,18 +226,27 @@ create index if not exists messages_unread_idx
 
 -- ── Realtime ────────────────────────────────────────────────────────────────
 --
--- A policy is not enough on its own. Tables created by Drizzle inherit
--- Supabase's default ACLs, which grant `anon` and `authenticated` only
--- REFERENCES, TRIGGER and TRUNCATE — no SELECT. Realtime evaluates the RLS
--- policy *as the subscribing role*, so without this grant the subscription
--- connects, reports itself healthy, and delivers nothing. RLS then does the
--- actual filtering; the grant is only the coarse gate.
+-- A policy is not enough on its own. Realtime evaluates the RLS policy *as the
+-- subscribing role*, so without a select grant the subscription connects,
+-- reports itself healthy, and delivers nothing. RLS then does the actual
+-- filtering; the grant is only the coarse gate.
 --
--- Deliberately just this one table and just `authenticated`. Everything else in
--- the schema is read server-side through Drizzle, so leaving those tables
--- ungranted keeps them unreachable from a browser by construction — a stronger
--- guarantee than a policy nobody can reach.
+-- Revoked first, and that is not ceremony. What a Drizzle-created table inherits
+-- is **not the same in both environments**: a local `supabase start` grants
+-- `anon` and `authenticated` only REFERENCES, TRIGGER and TRUNCATE, while the
+-- hosted project's default privileges grant full select, insert, update and
+-- delete. So on production this table was reachable for writes by `anon` — held
+-- back only by the absence of an update or delete policy and by `auth.uid()`
+-- being null inside the insert check. RLS held, but the grant said something
+-- nobody intended and this file's own comment claimed otherwise.
+--
+-- Stating it as revoke-then-grant makes the intent the outcome in both places:
+-- one table, one role, one privilege. Everything else in the schema is read
+-- server-side through Drizzle and stays ungranted, which keeps it unreachable
+-- from a browser by construction — a stronger guarantee than a policy nobody
+-- can reach.
 
+revoke all on public.messages from anon, authenticated;
 grant select on public.messages to authenticated;
 
 -- Guarded: the publication exists on Supabase, not on a plain Postgres, and

@@ -8,18 +8,28 @@
 -- written into 002 was dropped seconds later by 004's own drop list, and
 -- dropping a policy that will not exist is not an error, so nothing said so.
 --
--- Unlike `messages`, neither of these tables carries a select, insert, update
--- or delete grant for `anon` or `authenticated`. Tables Drizzle creates inherit
--- Supabase's default ACLs, which hand those roles only REFERENCES, TRIGGER and
--- TRUNCATE — none of which PostgREST exposes. That is exactly right here: no
--- browser has any reason to read a push endpoint or a notification row, and a
--- table with no DML grant cannot leak through PostgREST whatever a policy
--- happens to say. The policies below are the second line, not the first — they
--- exist so that adding a grant later is not instantly a breach.
+-- Unlike `messages`, no browser has any business reading a push endpoint or a
+-- notification row: every access is server-side through Drizzle, which connects
+-- as the database owner. So the client roles are revoked explicitly rather than
+-- assumed away.
+--
+-- Explicitly, because the default is not the same in both places. A local
+-- `supabase start` hands `anon` and `authenticated` only REFERENCES, TRIGGER
+-- and TRUNCATE on a table Drizzle creates — none of which PostgREST exposes —
+-- but the hosted project's default privileges grant full select, insert, update
+-- and delete. Discovered on the first deploy of these tables: identical
+-- migrations, opposite grants, and RLS quietly doing all the work on one side
+-- and none of it on the other.
+--
+-- The policies below are still the second line, not the first, and they are
+-- what makes adding a grant later a mistake rather than a breach.
 -- ============================================================================
 
 alter table public.push_subscriptions enable row level security;
 alter table public.notifications      enable row level security;
+
+revoke all on public.push_subscriptions from anon, authenticated;
+revoke all on public.notifications      from anon, authenticated;
 
 do $$
 declare policy_row record;
