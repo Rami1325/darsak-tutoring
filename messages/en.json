@@ -554,5 +554,50 @@
     "about": "About",
     "guides": "Guides",
     "rights": "All rights reserved"
+  },
+  "notifications": {
+    "someone": "Someone",
+    "inquiry_received": {
+      "title": "New lesson request",
+      "body": "From {name}"
+    },
+    "inquiry_accepted": {
+      "title": "Your request was accepted",
+      "body": "Your lesson with {name} is booked"
+    },
+    "inquiry_declined": {
+      "title": "Your request wasn't accepted",
+      "body": "You can try other tutors for the same subject"
+    },
+    "travel_cost_quoted": {
+      "title": "Travel cost",
+      "body": "{name} sent you a travel cost"
+    },
+    "message_received": {
+      "title": "New message",
+      "body": "From {name}"
+    },
+    "lesson_completed": {
+      "title": "Lesson confirmed",
+      "body": "Your lesson with {name}"
+    },
+    "lesson_no_show": {
+      "title": "No-show recorded",
+      "body": "Your lesson with {name}"
+    },
+    "lesson_cancelled": {
+      "title": "Lesson cancelled",
+      "body": "Your lesson with {name}"
+    },
+    "prompt": {
+      "title": "Don't miss a request",
+      "body": "Turn on notifications to hear about requests and messages straight away, even when the site is closed.",
+      "enable": "Turn on notifications",
+      "enabled": "Notifications are on for this device",
+      "disable": "Turn off",
+      "blocked": "Notifications are blocked for this site in your browser settings.",
+      "unsupported": "This browser does not support notifications.",
+      "installFirst": "On iPhone, add the site to your home screen first."
+    }
   }
 }

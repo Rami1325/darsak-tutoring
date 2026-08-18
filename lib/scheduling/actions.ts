@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireProfile } from "@/lib/auth/session";
 import { getDb, lessons, reviews, tutors } from "@/lib/db";
+import { notify } from "@/lib/notifications/notify";
 
 /**
  * What happened to a lesson.
@@ -98,6 +99,36 @@ async function recountLessons(tutorId: string) {
     .where(eq(tutors.profileId, tutorId));
 }
 
+
+/**
+ * Tell the other party what just happened to their lesson.
+ *
+ * Always the counterpart, never the actor: either side can record any of these
+ * statuses, so "the tutor" is the wrong answer half the time. The destination
+ * is always /schedule, which is the one page where a lesson can be confirmed,
+ * disputed or undone.
+ *
+ * Reopening is deliberately not among the callers. Undoing a status is a
+ * correction, and a correction that buzzes somebody's phone teaches them to
+ * turn notifications off — which costs far more than the one they miss later.
+ */
+function notifyCounterpart(
+  lesson: { id: string; tutorId: string; studentId: string },
+  actorId: string,
+  kind: "lesson_completed" | "lesson_no_show" | "lesson_cancelled",
+) {
+  const recipientId =
+    actorId === lesson.tutorId ? lesson.studentId : lesson.tutorId;
+
+  notify({
+    recipientId,
+    actorId,
+    kind,
+    href: "/schedule",
+    subjectId: lesson.id,
+  });
+}
+
 /**
  * It happened.
  *
@@ -123,6 +154,7 @@ export async function completeLesson(formData: FormData) {
     .where(eq(lessons.id, lesson.id));
 
   await recountLessons(lesson.tutorId);
+  notifyCounterpart(lesson, actor.profileId, "lesson_completed");
   refresh();
 }
 
@@ -140,6 +172,7 @@ export async function reportNoShow(formData: FormData) {
     .set({ status: "no_show", reportedBy: actor.profileId })
     .where(eq(lessons.id, lesson.id));
 
+  notifyCounterpart(lesson, actor.profileId, "lesson_no_show");
   refresh();
 }
 
@@ -163,6 +196,7 @@ export async function cancelLesson(formData: FormData) {
     .set({ status: "cancelled", reportedBy: actor.profileId })
     .where(eq(lessons.id, lesson.id));
 
+  notifyCounterpart(lesson, actor.profileId, "lesson_cancelled");
   refresh();
 }
 

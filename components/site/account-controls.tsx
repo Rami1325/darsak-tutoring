@@ -1,13 +1,8 @@
-import {
-  CalendarRange,
-  LayoutDashboard,
-  LogOut,
-  MessageSquare,
-} from "lucide-react";
+import { CalendarRange, LayoutDashboard, MessageSquare } from "lucide-react";
 
+import { SignOutButton } from "@/components/site/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { signOut } from "@/lib/auth/actions";
 
 export type AccountLabels = {
   dashboard: string;
@@ -76,12 +71,7 @@ export function AccountControls({
         )}
       </Button>
 
-      <form action={signOut}>
-        <Button type="submit" variant="outline" size="sm">
-          <LogOut className="size-4" aria-hidden />
-          <span className="hidden sm:inline">{labels.signOut}</span>
-        </Button>
-      </form>
+      <SignOutButton label={labels.signOut} />
     </>
   );
 }

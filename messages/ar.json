@@ -554,5 +554,50 @@
     "about": "من نحن",
     "guides": "أدلّة",
     "rights": "كل الحقوق محفوظة"
+  },
+  "notifications": {
+    "someone": "أحدهم",
+    "inquiry_received": {
+      "title": "طلب درس جديد",
+      "body": "وصلك طلب من {name}"
+    },
+    "inquiry_accepted": {
+      "title": "تم قبول طلبك",
+      "body": "الدرس مع {name} صار محجوزًا"
+    },
+    "inquiry_declined": {
+      "title": "لم يُقبل طلبك",
+      "body": "جرّب معلّمين آخرين للموضوع نفسه"
+    },
+    "travel_cost_quoted": {
+      "title": "تكلفة التنقّل",
+      "body": "وصلتك تكلفة تنقّل من {name}"
+    },
+    "message_received": {
+      "title": "رسالة جديدة",
+      "body": "من {name}"
+    },
+    "lesson_completed": {
+      "title": "تم تأكيد الدرس",
+      "body": "الدرس مع {name}"
+    },
+    "lesson_no_show": {
+      "title": "تم تسجيل عدم حضور",
+      "body": "الدرس مع {name}"
+    },
+    "lesson_cancelled": {
+      "title": "تم إلغاء الدرس",
+      "body": "الدرس مع {name}"
+    },
+    "prompt": {
+      "title": "لا تفوّت طلبًا",
+      "body": "فعّل التنبيهات ليصلك الطلب أول ما يوصل، حتى لو الموقع مسكّر.",
+      "enable": "تفعيل التنبيهات",
+      "enabled": "التنبيهات مفعّلة على هذا الجهاز",
+      "disable": "إيقاف",
+      "blocked": "التنبيهات محظورة في إعدادات المتصفّح لهذا الموقع.",
+      "unsupported": "هذا المتصفّح لا يدعم التنبيهات.",
+      "installFirst": "على الآيفون، أضف الموقع إلى الشاشة الرئيسية أولًا."
+    }
   }
 }

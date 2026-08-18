@@ -88,6 +88,24 @@ export const reviewStatus = pgEnum("review_status", [
   "rejected",
 ]);
 
+/**
+ * Every event worth interrupting someone for.
+ *
+ * `reopen` is deliberately absent. Undoing a status is a correction, and a
+ * correction that buzzes the other person's phone teaches them to turn
+ * notifications off — which costs far more than the one they missed.
+ */
+export const notificationKind = pgEnum("notification_kind", [
+  "inquiry_received",
+  "inquiry_accepted",
+  "inquiry_declined",
+  "travel_cost_quoted",
+  "message_received",
+  "lesson_completed",
+  "lesson_no_show",
+  "lesson_cancelled",
+]);
+
 /** Free at launch; PRO is deferred until roughly 300 active tutors exist. */
 export const planTier = pgEnum("plan_tier", ["free", "pro"]);
 
@@ -709,5 +727,93 @@ export const blocks = pgTable(
     // The reverse direction: "has anyone blocked me?" is asked as often as
     // "whom have I blocked?", and both run on every send.
     index("blocks_blocked_idx").on(table.blockedId),
+  ],
+);
+
+/**
+ * One browser, one device, one permission grant.
+ *
+ * Web Push is the only channel here that needs no vendor: the VAPID keypair is
+ * self-signed, and the endpoint the browser hands back is the whole address.
+ * That is why it comes before SMS and email, which are both waiting on an
+ * account somebody has to open.
+ *
+ * `endpoint` is unique because it *is* the identity of a subscription — the
+ * same person on a phone and a laptop is two rows, and re-subscribing on the
+ * same browser must update the existing row rather than accumulate dead ones.
+ *
+ * Never granted to `authenticated` (see `005_notifications.sql`). Nothing in
+ * the browser has any reason to read these, and a table with no grant cannot
+ * leak through PostgREST no matter what a policy says.
+ */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    /** The two halves of the subscription's encryption key material. */
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: varchar("user_agent", { length: 300 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Bumped on every successful send, so a rotting row is visible. */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("push_subscriptions_endpoint_key").on(table.endpoint),
+    index("push_subscriptions_profile_idx").on(table.profileId),
+  ],
+);
+
+/**
+ * What we told someone, and when.
+ *
+ * Two jobs, and deliberately not a third. It **coalesces**: five messages in a
+ * row are one buzz, because `dedupeKey` plus a window is checked before
+ * sending. And it is the seam every later channel plugs into — an email digest
+ * or an SMS fallback reads this table rather than being retrofitted into eight
+ * server actions a second time.
+ *
+ * The third job it does not do is track what you have read. The header badge
+ * derives that from `messages.read_at` and `inquiries.status`, which are the
+ * facts; a second copy here could only disagree with them.
+ *
+ * `payload` carries the parameters the copy needs — a first name, a subject —
+ * rather than rendered text, because the recipient's locale is on their profile
+ * and a digest sent tomorrow should still render in it.
+ */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    recipientId: uuid("recipient_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    kind: notificationKind("kind").notNull(),
+    /** Where tapping it should land, locale prefix included. */
+    href: text("href").notNull(),
+    /** `kind:subjectId` — one notification per thing inside the window. */
+    dedupeKey: varchar("dedupe_key", { length: 200 }).notNull(),
+    payload: jsonb("payload").$type<Record<string, string>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Null means enqueued but never delivered — no subscription, or a failure. */
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (table) => [
+    // The coalescing lookup: "anything like this for them recently?"
+    index("notifications_dedupe_idx").on(
+      table.recipientId,
+      table.dedupeKey,
+      table.createdAt,
+    ),
   ],
 );

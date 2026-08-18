@@ -69,19 +69,39 @@ export function brandMarkSvg({
   px = BRAND_MARK.size,
   rounded = true,
   safeZone = false,
-}: { px?: number; rounded?: boolean; safeZone?: boolean } = {}) {
+  badge = false,
+}: {
+  px?: number;
+  rounded?: boolean;
+  safeZone?: boolean;
+  badge?: boolean;
+} = {}) {
   const { size, radius, glyph, strokeWidth, dot } = BRAND_MARK;
   const scale = 0.6;
   const inset = (size * (1 - scale)) / 2;
 
+  // Android draws a notification badge as a mask: every non-transparent pixel
+  // becomes one flat colour. So the tile has to go and the glyph has to carry
+  // the shape alone — ship the full-colour icon there and it arrives as a
+  // solid square.
+  const ink = badge ? "#ffffff" : BRAND_COLORS.onPrimary;
+
   const art =
-    `<path d="${glyph}" fill="none" stroke="${BRAND_COLORS.onPrimary}"` +
+    `<path d="${glyph}" fill="none" stroke="${ink}"` +
     ` stroke-width="${strokeWidth}" stroke-linecap="round" />` +
-    `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${BRAND_COLORS.onPrimary}" />`;
+    `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${ink}" />`;
+
+  const tile = badge
+    ? ""
+    : `<rect width="${size}" height="${size}" rx="${rounded ? radius : 0}" fill="${BRAND_COLORS.primary}" />`;
+
+  const body = safeZone
+    ? `<g transform="translate(${inset} ${inset}) scale(${scale})">${art}</g>`
+    : art;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${px}" height="${px}">
-  <rect width="${size}" height="${size}" rx="${rounded ? radius : 0}" fill="${BRAND_COLORS.primary}" />
-  ${safeZone ? `<g transform="translate(${inset} ${inset}) scale(${scale})">${art}</g>` : art}
+  ${tile}
+  ${body}
 </svg>
 `;
 }

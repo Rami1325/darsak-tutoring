@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Rating } from "@/components/marketplace/rating";
+import { PushToggle } from "@/components/notifications/push-toggle";
 import { AccountMenu } from "@/components/site/account-menu";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
@@ -29,6 +30,10 @@ import {
   countNewInquiries,
   countUnreadMessages,
 } from "@/lib/messaging/queries";
+import {
+  isPushAvailable,
+  vapidPublicKey,
+} from "@/lib/notifications/config";
 import { countOpenHours } from "@/lib/scheduling/availability";
 import { countScheduleAttention } from "@/lib/scheduling/lessons";
 import { tutorHref } from "@/lib/routes";
@@ -49,6 +54,7 @@ export default async function DashboardPage({ params }: Props) {
 
   const profile = await requireProfile();
   const t = await getTranslations("dashboard");
+  const tPush = await getTranslations("notifications.prompt");
   const common = await getTranslations("common");
 
   const db = getDb();
@@ -200,6 +206,28 @@ export default async function DashboardPage({ params }: Props) {
             ))}
           </ul>
         </section>
+
+        {/* Asked for here and nowhere else: this is the one page where the
+            person has already decided to be a tutor, so "don't miss a request"
+            is a sentence that means something to them. A permission prompt on
+            a landing page gets denied, and a denial is close to permanent. */}
+        {isPushAvailable && (
+          <div className="mt-6">
+            <PushToggle
+              publicKey={vapidPublicKey}
+              labels={{
+                title: tPush("title"),
+                body: tPush("body"),
+                enable: tPush("enable"),
+                enabled: tPush("enabled"),
+                disable: tPush("disable"),
+                blocked: tPush("blocked"),
+                unsupported: tPush("unsupported"),
+                installFirst: tPush("installFirst"),
+              }}
+            />
+          </div>
+        )}
 
         <section className="mt-6 grid gap-4 sm:grid-cols-3">
           <Stat

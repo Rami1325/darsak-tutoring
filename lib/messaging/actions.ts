@@ -32,6 +32,7 @@ import {
   tutors,
 } from "@/lib/db";
 import { findConversation } from "@/lib/messaging/queries";
+import { notify } from "@/lib/notifications/notify";
 import { threadHref } from "@/lib/routes";
 import { DEFAULT_LESSON_MINUTES, isSlotOpen } from "@/lib/scheduling/slots";
 import type { Level } from "@/lib/taxonomy/types";
@@ -277,6 +278,24 @@ export async function submitInquiry(
     .set({ inquiryId: created.id })
     .where(eq(conversations.id, conversation.id));
 
+  /*
+   * Before the redirect, and that ordering is exactly why `notify` schedules
+   * its own `after()` rather than expecting callers to. `redirect` works by
+   * throwing, so anything awaited past this line never runs — and wrapping the
+   * tail in a try/catch to fix that swallows the redirect itself.
+   *
+   * This is the notification the whole product turns on. Since phone numbers
+   * were cut, a tutor who does not learn a lead arrived has no other way to
+   * find out.
+   */
+  notify({
+    recipientId: tutor.profileId,
+    actorId: profile.id,
+    kind: "inquiry_received",
+    href: threadHref(conversation.id),
+    subjectId: conversation.id,
+  });
+
   redirect({ href: threadHref(conversation.id), locale });
   return { ok: true };
 }
@@ -363,6 +382,15 @@ export async function sendMessage(
   // inserts from any client keep the inbox ordered correctly.
 
   if (member.isTutor) await recordTutorResponse(member.tutorId, member.studentId);
+
+  // Coalesced on the conversation — five lines typed in a row are one buzz.
+  notify({
+    recipientId: member.counterpartId,
+    actorId: profile.id,
+    kind: "message_received",
+    href: threadHref(member.id),
+    subjectId: member.id,
+  });
 
   refresh();
   return { ok: true };
@@ -503,6 +531,17 @@ export async function setInquiryStatus(formData: FormData) {
 
   await refreshResponseTime(profile.id);
 
+  const conversation = await findConversation(row.studentId, profile.id);
+  if (conversation) {
+    notify({
+      recipientId: row.studentId,
+      actorId: profile.id,
+      kind: status === "accepted" ? "inquiry_accepted" : "inquiry_declined",
+      href: threadHref(conversation.id),
+      subjectId: conversation.id,
+    });
+  }
+
   refresh();
 }
 
@@ -615,7 +654,7 @@ export async function setTravelCost(formData: FormData) {
   const parsed = z.coerce.number().int().min(0).max(500).safeParse(raw);
   const travelCost = raw.length === 0 ? null : parsed.success ? parsed.data : null;
 
-  await db
+  const [updated] = await db
     .update(inquiries)
     .set({ travelCost })
     .where(
@@ -624,7 +663,23 @@ export async function setTravelCost(formData: FormData) {
         eq(inquiries.tutorId, profile.id),
         eq(inquiries.mode, "in_person"),
       ),
-    );
+    )
+    .returning({ studentId: inquiries.studentId });
+
+  // Only when a cost is quoted. Clearing one is housekeeping on the tutor's
+  // side and not news the student needs a phone buzz about.
+  if (updated && travelCost !== null) {
+    const conversation = await findConversation(updated.studentId, profile.id);
+    if (conversation) {
+      notify({
+        recipientId: updated.studentId,
+        actorId: profile.id,
+        kind: "travel_cost_quoted",
+        href: threadHref(conversation.id),
+        subjectId: conversation.id,
+      });
+    }
+  }
 
   refresh();
 }

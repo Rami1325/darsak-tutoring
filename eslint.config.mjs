@@ -17,6 +17,17 @@ const eslintConfig = defineConfig([
     "supabase/.temp/**",
   ]),
   {
+    /**
+     * Node preload hooks are CommonJS by necessity.
+     *
+     * `--require` runs before any ESM loader exists, which is the whole reason
+     * a hook can patch module resolution at all — so `require()` here is the
+     * mechanism, not a lapse.
+     */
+    files: ["**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
+  {
     files: ["**/*.{ts,tsx}"],
     // Vendored shadcn primitives are exempt: several expose a deliberately
     // physical API (Sheet's `side="left"` means the left edge of the viewport)

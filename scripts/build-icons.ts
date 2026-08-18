@@ -25,6 +25,8 @@ type Target = {
   rounded?: boolean;
   /** Inset the glyph to 60% for Android's maskable crop. */
   safeZone?: boolean;
+  /** Monochrome, tile-less: Android masks a notification badge to one colour. */
+  badge?: boolean;
   /**
    * Composite onto the tile colour instead of keeping alpha.
    *
@@ -46,6 +48,9 @@ const TARGETS: Target[] = [
   { path: "public/icon-192.png", px: 192, rounded: true },
   { path: "public/icon-512.png", px: 512, rounded: true },
   { path: "public/icon-maskable-512.png", px: 512, safeZone: true, opaque: true },
+
+  // Status-bar badge on Android. Stays transparent: the platform masks it.
+  { path: "public/icon-badge-96.png", px: 96, badge: true },
 ];
 
 async function main() {
@@ -54,6 +59,7 @@ async function main() {
       px: target.px,
       rounded: target.rounded ?? false,
       safeZone: target.safeZone ?? false,
+      badge: target.badge ?? false,
     });
     const file = join(ROOT, target.path);
 
@@ -71,6 +77,7 @@ async function main() {
       `  ${target.path.padEnd(30)} ${target.px}px` +
         `${target.rounded ? "  rounded" : ""}` +
         `${target.safeZone ? "  safe-zone" : ""}` +
+        `${target.badge ? "  badge" : ""}` +
         `${target.opaque ? "  opaque" : "  alpha"}`,
     );
   }

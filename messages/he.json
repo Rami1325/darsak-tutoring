@@ -554,5 +554,50 @@
     "about": "אודות",
     "guides": "מדריכים",
     "rights": "כל הזכויות שמורות"
+  },
+  "notifications": {
+    "someone": "מישהו",
+    "inquiry_received": {
+      "title": "בקשת שיעור חדשה",
+      "body": "הגיעה אליך בקשה מ{name}"
+    },
+    "inquiry_accepted": {
+      "title": "הבקשה שלך אושרה",
+      "body": "השיעור עם {name} נקבע"
+    },
+    "inquiry_declined": {
+      "title": "הבקשה שלך לא אושרה",
+      "body": "אפשר לנסות מורים אחרים באותו מקצוע"
+    },
+    "travel_cost_quoted": {
+      "title": "עלות נסיעה",
+      "body": "הגיעה אליך עלות נסיעה מ{name}"
+    },
+    "message_received": {
+      "title": "הודעה חדשה",
+      "body": "מ{name}"
+    },
+    "lesson_completed": {
+      "title": "השיעור אושר",
+      "body": "השיעור עם {name}"
+    },
+    "lesson_no_show": {
+      "title": "נרשמה אי-הגעה",
+      "body": "השיעור עם {name}"
+    },
+    "lesson_cancelled": {
+      "title": "השיעור בוטל",
+      "body": "השיעור עם {name}"
+    },
+    "prompt": {
+      "title": "שלא תפספס בקשה",
+      "body": "הפעל התראות כדי לקבל בקשות והודעות מיד, גם כשהאתר סגור.",
+      "enable": "הפעלת התראות",
+      "enabled": "ההתראות מופעלות במכשיר הזה",
+      "disable": "כיבוי",
+      "blocked": "ההתראות חסומות בהגדרות הדפדפן עבור האתר הזה.",
+      "unsupported": "הדפדפן הזה לא תומך בהתראות.",
+      "installFirst": "באייפון, יש להוסיף את האתר למסך הבית תחילה."
+    }
   }
 }
